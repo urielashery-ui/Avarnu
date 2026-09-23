@@ -1,0 +1,33 @@
+{
+  "_הסבר": "מעתיקים לקובץ config/sponsors.json, ממלאים שותפים אמיתיים, ומפעילים עם ADS_ENABLED=true. slot: moving | save | kids | home. match (לא חובה): cities, tenure (rent/own), kids (true). from/to: תאריכי קמפיין.",
+  "sponsors": [
+    {
+      "id": "movers-example",
+      "slot": "moving",
+      "title": "הובלה עם הנחה ללקוחות עברנו",
+      "text": "חברת הובלות עם ביטוח מלא ותמחור קבוע מראש. 10% הנחה למי שמגיע מעברנו.",
+      "cta": "לקבלת הצעת מחיר",
+      "url": "https://example.com/movers",
+      "active": false
+    },
+    {
+      "id": "electric-example",
+      "slot": "save",
+      "title": "ספק חשמל: מסלול לבית חדש",
+      "text": "מסלול קבוע עם הנחה על תעריף חברת החשמל. ההצטרפות בלי עלות.",
+      "cta": "לבדיקת המסלול",
+      "url": "https://example.com/electric",
+      "active": false
+    },
+    {
+      "id": "cleaning-example",
+      "slot": "home",
+      "title": "ניקיון דירה לפני כניסה",
+      "text": "צוות ניקיון לדירה ריקה, כולל מטבח וחלונות. אפשר לקבוע ליום לפני קבלת המפתח.",
+      "cta": "לתיאום",
+      "url": "https://example.com/cleaning",
+      "active": false,
+      "match": { "cities": ["פתח תקווה", "תל אביב-יפו", "רמת גן"] }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+# הגדרות העלאה ל-Render (Blueprint). ב-Render: New → Blueprint → בוחרים את ה-repo.
+# מה שמסומן sync: false — Render ישאל אתכם בזמן היצירה.
+services:
+  - type: web
+    name: avarnu
+    runtime: docker
+    region: frankfurt            # הכי קרוב לישראל מבין האפשרויות
+    plan: 0.5c-512mb             # התוכנית הבסיסית בתשלום. בחינם אין דיסק קבוע, והאתר נרדם
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true             # כל עדכון ב-GitHub עולה לאוויר לבד
+    disk:
+      name: avarnu-data
+      mountPath: /app/data       # כאן נשמרות הפניות. לא למחוק!
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_URL
+        value: https://avarnu.com
+      - key: DATA_KEY            # מפתח ההצפנה. Render יוצר אותו לבד. לשמור עותק!
+        generateValue: true
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS          # סיסמת מסך הניהול. Render יוצר אותה לבד. רואים אותה ב-Environment
+        generateValue: true
+      - key: NOTIFY_TO           # המייל שלכם, להתראות על פניות חדשות
+        sync: false
+      - key: SMTP_URL            # ממלאים אחרי שיוצרים סיסמת אפליקציה ב-Gmail. אפשר להשאיר ריק בהתחלה
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: RETENTION_DAYS
+        value: "180"
+      - key: SUPPORT_LANGS
+        value: he
+      - key: MOVERS_ENABLED
+        value: "false"
+      - key: ADS_ENABLED
+        value: "false"
+      - key: PAYMENTS_ENABLED
+        value: "false"

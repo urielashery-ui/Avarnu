@@ -1,0 +1,381 @@
+<title>עברנו</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --ground:#F6F8FC; --surface:#FFFFFF; --sunk:#EDF1F8; --ink:#16233F; --muted:#4D5A75; --line:#D6DEEC; --field:#66748F;
+  --accent:#2A63C9; --accent-ink:#FFFFFF; --accent-soft:#E4EEFF;
+  --warm:#B63A1E; --warm-soft:#FFE7DC; --sun:#FFC940; --sun-ink:#2B2100; --sun-soft:#FFF3CC; --mint-soft:#DDF4E8;
+  --tape:var(--sun); --tape-ink:var(--sun-ink);
+  --ok:#1B7A43; --warn:#8A5200; --err:#B42318; --focus:#1D4ED8;
+  --shadow:0 12px 32px -20px rgba(30,60,120,.32);
+  --display:"Secular One","Arial Hebrew",Arial,sans-serif;
+  --body:"Rubik","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#0F1626; --surface:#172238; --sunk:#1F2C45; --ink:#EDF2FF; --muted:#A9B6CF; --line:#2F3D5A; --field:#8595B3;
+    --accent:#8DB4FF; --accent-ink:#0A1630; --accent-soft:#1F3358;
+    --warm:#FF9C7A; --warm-soft:#3A261E; --sun:#FFC940; --sun-soft:#3A3218; --mint-soft:#173A2C;
+    --ok:#5BD08E; --warn:#F0B43A; --err:#FF8A7A; --focus:#9DB8FF; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#0F1626; --surface:#172238; --sunk:#1F2C45; --ink:#EDF2FF; --muted:#A9B6CF; --line:#2F3D5A; --field:#8595B3;
+  --accent:#8DB4FF; --accent-ink:#0A1630; --accent-soft:#1F3358;
+  --warm:#FF9C7A; --warm-soft:#3A261E; --sun:#FFC940; --sun-soft:#3A3218; --mint-soft:#173A2C;
+  --ok:#5BD08E; --warn:#F0B43A; --err:#FF8A7A; --focus:#9DB8FF; --shadow:none;
+}
+/* ניגודיות גבוהה — גובר על שני המצבים */
+#app.hc{
+  color-scheme:light;
+  --ground:#FFFFFF; --surface:#FFFFFF; --sunk:#FFFFFF; --ink:#000000; --muted:#000000; --line:#000000; --field:#000000;
+  --accent:#00338A; --accent-ink:#FFFFFF; --accent-soft:#FFFFFF; --warm:#000000; --warm-soft:#FFFFFF; --sun:#000000; --sun-ink:#FFFFFF;
+  --sun-soft:#FFFFFF; --mint-soft:#FFFFFF; --tape:#000000; --tape-ink:#FFFFFF;
+  --ok:#00501F; --warn:#5C3700; --err:#8F0000; --focus:#0033CC; --shadow:none;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--ground);margin:0}
+#app{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.6;padding-inline:16px;padding-block:0 3rem;min-height:100vh}
+#app.rf{--display:Arial,sans-serif; --body:Arial,sans-serif}
+#app.ul a{text-decoration:underline!important;text-underline-offset:3px}
+#app.ul a,#app.ul button{outline:1px dashed currentColor;outline-offset:1px}
+#app.nm *{transition:none!important;animation:none!important}
+#app.nm .label{transform:none}
+.wrap{max-width:54rem;margin-inline:auto}
+a{color:var(--accent)}
+h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0;line-height:1.2}
+p{margin:0}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;inset-inline-start:16px;top:-100px;background:var(--accent);color:var(--accent-ink);padding:.75rem 1rem;border-radius:8px;z-index:10;font-weight:700}
+.skip:focus{top:calc(8px + env(safe-area-inset-top,0px))}
+:focus-visible{outline:3px solid var(--focus)!important;outline-offset:2px}
+[tabindex="-1"]:focus{outline:none!important}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding-block:1rem;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:1.25rem;display:flex;align-items:center;gap:.5rem;color:var(--ink);text-decoration:none}
+.brand .tld{font-family:var(--body);font-size:.85rem;color:var(--muted);margin-inline-start:-.35rem;align-self:flex-end;margin-bottom:.2rem}
+.brand svg{width:2rem;height:2rem;flex:none}.lg-box{fill:var(--sun)}.lg-line{stroke:var(--sun-ink);stroke-width:1.5;opacity:.35}.lg-house{fill:var(--accent)}.lg-door{fill:var(--surface)}
+.tools{display:flex;gap:.5rem;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:1rem;cursor:pointer;border-radius:999px;min-height:2.75rem;padding:.55rem 1.1rem;border:2px solid var(--field);background:var(--surface);color:var(--ink);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
+button.primary,.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.quiet{border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}
+button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button[disabled]{opacity:.6;cursor:wait}
+
+/* a11y panel */
+.a11y{background:var(--surface);border:2px solid var(--ink);border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem}
+.a11y h2{font-size:1.25rem;margin-bottom:.75rem}
+.a11y .opts{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+.a11y fieldset{border:0;padding:0;margin:0 0 .75rem}
+.a11y legend{font-weight:700;margin-bottom:.4rem}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:1.75rem;align-items:center;padding:1.5rem 1.4rem 2rem;margin-bottom:1rem;border-radius:24px;background:radial-gradient(circle at 92% 12%,var(--sun-soft) 0 7rem,transparent 7.1rem),radial-gradient(circle at 4% 96%,var(--warm-soft) 0 8rem,transparent 8.1rem),var(--accent-soft)}
+.hl{background:linear-gradient(transparent 62%,var(--sun) 62%);color:inherit;padding:0 .1em;border-radius:2px}
+#app.hc .hl{background:none;text-decoration:underline}
+.hero h1{font-size:clamp(2rem,6vw,3.1rem)}
+.hero .sub{font-size:1.15rem;color:var(--muted);max-width:38ch;margin-top:.9rem}
+.facts{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.1rem 0 0;padding:0;list-style:none}
+.facts li{font-size:.9rem;padding:.3rem .85rem;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-weight:500}
+.label{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem;position:relative;box-shadow:0 10px 30px -18px rgba(0,40,35,.45);transform:rotate(1.5deg)}
+.label::before{content:"";position:absolute;top:-10px;inset-inline:30%;height:22px;background:var(--tape);opacity:.9;border-radius:2px}
+.label dl{margin:0}
+.label .row{display:flex;justify-content:space-between;gap:.6rem;font-size:.9rem;padding-block:.4rem;border-bottom:1px dashed var(--line)}
+.label .row:last-child{border:0}
+.label dt{color:var(--muted)}
+.label dd{margin:0;font-weight:600;text-align:end}
+
+/* progress */
+.progress{margin-block:.25rem 1rem}
+.progress p{font-weight:600}
+.progress .muted{font-weight:400}
+.bar{height:.7rem;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:.5rem;border:1px solid var(--line)}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun),var(--accent));transition:width .3s}
+.muted{color:var(--muted)}
+
+/* form */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.5rem;box-shadow:var(--shadow)}
+.panel h2{font-size:1.65rem}
+.lead{margin:.4rem 0 1.2rem;color:var(--muted);max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1rem}
+.w6{grid-column:span 6}.w4{grid-column:span 4}.w3{grid-column:span 3}.w2{grid-column:span 2}
+.group{grid-column:span 6;border:0;padding:0;margin:.4rem 0 0;min-width:0}
+.group>legend{font-family:var(--display);font-size:1.15rem;margin-bottom:.6rem;padding:0}
+.field{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.field>label,.field>.lbl{font-weight:600}
+.field>label.choice{font-weight:400}
+.req{color:var(--err);font-weight:600;font-size:.9rem}
+.hint{color:var(--muted);font-size:.9rem}
+.ferr{color:var(--err);font-size:.95rem;font-weight:600;display:flex;gap:.3rem}
+.ferr::before{content:"!";display:inline-grid;place-items:center;width:1.2rem;height:1.2rem;border-radius:50%;background:var(--err);color:var(--surface);font-size:.8rem;flex:none;margin-top:.2rem}
+input,select{font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:2px solid var(--field);border-radius:12px;padding:.6rem .75rem;width:100%;min-width:0;min-height:2.9rem}
+input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--err);border-width:3px}
+.choices{display:flex;gap:.5rem;flex-wrap:wrap;border:0;padding:0;margin:0}
+.choices legend{font-weight:600;margin-bottom:.4rem;padding:0}
+.choice{display:flex;align-items:center;gap:.55rem;border:2px solid var(--line);border-radius:14px;padding:.55rem .9rem;cursor:pointer;background:var(--surface);min-height:2.9rem}
+.choice input{width:1.3rem;height:1.3rem;min-height:0;margin:0;accent-color:var(--accent);flex:none}
+.choice:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.errsum{border:3px solid var(--err);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;background:var(--surface)}
+.errsum h2{font-size:1.2rem;color:var(--err);margin-bottom:.4rem;font-family:var(--body);font-weight:700}
+.errsum ul{margin:0;padding-inline-start:1.2rem}
+.errsum a{color:var(--err);font-weight:600}
+.nav{display:flex;justify-content:space-between;gap:.6rem;margin-top:1.4rem;flex-wrap:wrap}
+
+/* results */
+.sum{display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center}
+.count{font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.refbox{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--accent);border-radius:10px}
+.refbox strong{font-size:1.2rem;letter-spacing:.05em}
+.sect{margin-top:1.75rem}
+.sect h2,.sect h3{font-size:1.3rem;font-family:var(--display);font-weight:400;display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
+.sect h2 .muted,.sect h3 .muted{font-family:var(--body);font-size:.9rem}
+.items{list-style:none;margin:.6rem 0 0;padding:0;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;background:var(--surface)}
+.item{padding:1rem;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item.key{background:var(--accent-soft)}
+.item .head{display:flex;gap:.7rem;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.item .check{display:flex;gap:.7rem;align-items:flex-start;cursor:pointer;font-weight:700;font-size:1.05rem;flex:1;min-width:12rem}
+.item .check input{width:1.5rem;height:1.5rem;min-height:0;margin:.15rem 0 0;accent-color:var(--accent);flex:none}
+.item.is-done{background:var(--mint-soft)}
+.item.is-done .ttl{text-decoration:line-through;color:var(--muted)}
+.item .desc{color:var(--muted);margin-top:.3rem;padding-inline-start:2.2rem;max-width:62ch}
+.when{font-size:.85rem;padding:.15rem .6rem;border-radius:6px;background:var(--sunk);border:1px solid var(--line);white-space:nowrap}
+.when.auto{background:transparent;border-color:var(--ok);color:var(--ok);font-weight:600}
+.acts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.7rem;padding-inline-start:2.2rem}
+.acts .btn,.acts button{font-size:.95rem;min-height:2.6rem;padding:.4rem .9rem}
+.need{margin:.6rem 0 0;padding:0 0 0 0;padding-inline-start:2.2rem;list-style:none;display:flex;flex-wrap:wrap;gap:.4rem;font-size:.85rem}
+.need li{padding:.1rem .55rem;border-radius:6px;background:var(--sunk);border:1px solid var(--line)}
+.need li.miss{background:transparent;border:2px dashed var(--warn);color:var(--warn);font-weight:600}
+.dossier{margin-top:1.75rem}
+.dossier h2{font-size:1.3rem}
+.dossier pre{white-space:pre-wrap;font-family:var(--body);background:var(--sunk);padding:1rem;border-radius:8px;margin:.75rem 0;border:1px solid var(--line)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline:0;margin-inline:auto;width:max-content;max-width:90vw;background:var(--ink);color:var(--ground);padding:.7rem 1rem;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;font-weight:600}
+.toast.show{opacity:1}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.1rem;margin:2rem 0 .5rem;padding:0;list-style:none}
+.how li{border-top:3px solid var(--ink);padding-top:.6rem}
+.how h2{font-size:1.15rem}
+.how p{margin-top:.25rem;color:var(--muted)}
+footer{margin-top:2rem;border-top:1px solid var(--line);padding-top:1rem;display:flex;gap:.5rem 1.2rem;flex-wrap:wrap;align-items:center}
+footer p{color:var(--muted);font-size:.9rem;flex-basis:100%}
+dialog{border:2px solid var(--ink);border-radius:12px;padding:0;max-width:40rem;width:calc(100% - 32px);background:var(--surface);color:var(--ink);font-family:var(--body)}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog .dbody{padding:1.3rem;max-height:75vh;overflow:auto;line-height:1.7}
+dialog h2{font-size:1.4rem;margin-bottom:.6rem}
+dialog h3{font-size:1.05rem;margin:1rem 0 .3rem;font-family:var(--body);font-weight:700}
+dialog ul{padding-inline-start:1.2rem;margin:.3rem 0}
+dialog .dfoot{padding:.8rem 1.3rem;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+.fill{background:var(--accent-soft);padding:0 .3rem;border-radius:4px}
+
+/* הנחות */
+.benefits{margin-top:1.5rem}
+.bhead{background:radial-gradient(circle at 6% 20%,var(--sun-soft) 0 4.5rem,transparent 4.6rem),var(--warm-soft);color:var(--ink);border-radius:20px;padding:1.3rem 1.5rem}
+.bhead h2{font-size:1.6rem}
+.bhead p{margin-top:.3rem;max-width:60ch}
+.bhead .big{font-size:2.6rem;font-family:var(--display);line-height:1;color:var(--warm)}
+.amount{font-weight:700;font-size:.9rem;padding:.2rem .7rem;border-radius:99px;background:var(--tape);color:var(--tape-ink);white-space:nowrap}
+.bestb{display:table;font-size:.8rem;font-weight:700;padding:.1rem .5rem;border-radius:6px;border:2px solid var(--accent);color:var(--accent);margin-top:.3rem;white-space:nowrap}
+.sure{font-size:.8rem;color:var(--muted);font-weight:600}
+.how{margin-top:.5rem;padding-inline-start:2.2rem;max-width:62ch}
+.how strong{display:block;line-height:1.3}
+.docs{margin:.4rem 0 0;padding-inline-start:3.4rem;font-size:.95rem}
+.listhead{font-size:1.5rem;margin-top:2rem}
+@media (max-width:640px){.how{padding-inline-start:0}.docs{padding-inline-start:1.2rem}}
+/* הובלה ודפי מובילים */
+.moving{margin-top:1.5rem;background:var(--accent-soft)}
+.moving h2{font-size:1.4rem;margin-bottom:.4rem}
+.mv-sent{margin:.6rem 0;padding-inline-start:1.2rem}
+.mv-links{display:inline-flex;gap:1rem;flex-wrap:wrap}
+.pg-h1{font-size:clamp(1.7rem,5vw,2.3rem);margin-bottom:.4rem}
+.mv-list{margin-top:1rem}
+.mv-name{font-size:1.25rem}
+.mv-revs{margin:.3rem 0 0;padding-inline-start:1.1rem;font-size:.95rem}
+.mv-dl{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem;margin:1rem 0}
+.mv-dl dt{color:var(--muted)}.mv-dl dd{margin:0;font-weight:500}
+.mv-status{margin-top:1rem}.mv-status h2{font-size:1.3rem}
+.opts{display:flex;flex-wrap:wrap;gap:.5rem}
+footer a{color:var(--accent)}
+
+/* שפות */
+.langsel{display:inline-flex;align-items:center;gap:.35rem;border:2px solid var(--field);border-radius:999px;padding:0 .35rem 0 .7rem;min-height:2.75rem;background:var(--surface)}
+.langsel select{border:0;min-height:0;padding:.35rem .4rem;background:transparent;font-weight:600;width:auto}
+.globe{width:1.2rem;height:1.2rem;fill:none;stroke:currentColor;stroke-width:1.6;flex:none}
+.henote{background:var(--sun-soft);border:1px solid var(--line);border-radius:10px;padding:.6rem .9rem;margin:.8rem 0;font-size:.95rem}
+[dir="rtl"] input[dir="ltr"]{text-align:right}
+#app:lang(ru),#app:lang(ar){--display:"Rubik","Segoe UI",Arial,sans-serif}
+#app:lang(ru) h1,#app:lang(ru) h2,#app:lang(ru) h3,#app:lang(ru) .brand,#app:lang(ar) h1,#app:lang(ar) h2,#app:lang(ar) h3,#app:lang(ar) .brand{font-weight:700}
+#app:lang(ar){line-height:1.75}
+/* שותפים */
+.partners{list-style:none;margin:.6rem 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.8rem}
+.partner{background:var(--surface);border:1px dashed var(--field);border-radius:18px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.4rem;align-items:flex-start}
+.partner h3{font-size:1.1rem}
+.partner p{color:var(--muted)}
+.ptag{font-size:.75rem;font-weight:700;letter-spacing:.02em;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:0 .55rem}
+@media (max-width:640px){
+  .hero{grid-template-columns:1fr}
+  .label{transform:none}
+  .w4,.w3,.w2{grid-column:span 6}
+  .how{grid-template-columns:1fr}
+  .sum{grid-template-columns:1fr}
+  .item .desc,.acts,.need{padding-inline-start:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.label{transform:none}}
+</style>
+
+<div id="app" lang="he" dir="rtl">
+<a class="skip" href="#main" data-i18n="skip">דילוג לתוכן הראשי</a>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="15" width="22" height="18" rx="3" class="lg-box"/><path d="M3 21h22" class="lg-line"/><path d="M19 17l9-8 9 8v14a2 2 0 0 1-2 2H21a2 2 0 0 1-2-2z" class="lg-house"/><rect x="25.5" y="23" width="5" height="10" rx="1" class="lg-door"/></svg><span>עברנו</span><span class="tld" dir="ltr" aria-hidden="true">.com</span></div>
+    <div class="tools">
+      <label class="langsel" for="langSel"><svg viewBox="0 0 24 24" aria-hidden="true" class="globe"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg><span class="sr" data-i18n="lang.label">שפה</span>
+        <select id="langSel"><option value="he" lang="he">עברית</option><option value="en" lang="en">English</option><option value="ru" lang="ru">Русский</option><option value="ar" lang="ar">العربية</option></select></label>
+      <button type="button" id="a11yBtn" aria-expanded="false" aria-controls="a11yPanel" data-i18n="a11y.btn">נגישות</button>
+      <button type="button" id="resetBtn" class="quiet">מחיקת הפרטים והתחלה מחדש</button>
+    </div>
+  </header>
+
+  <section class="a11y" id="a11yPanel" aria-labelledby="a11yTitle" hidden>
+    <h2 id="a11yTitle" data-i18n="a11y.title">הגדרות נגישות</h2>
+    <fieldset>
+      <legend data-i18n="a11y.size">גודל הטקסט</legend>
+      <div class="opts">
+        <button type="button" data-fs="100" aria-pressed="true" data-i18n="a11y.size.1">רגיל</button>
+        <button type="button" data-fs="118" aria-pressed="false" data-i18n="a11y.size.2">גדול</button>
+        <button type="button" data-fs="135" aria-pressed="false" data-i18n="a11y.size.3">גדול מאוד</button>
+      </div>
+    </fieldset>
+    <div class="opts">
+      <button type="button" data-tog="hc" aria-pressed="false" data-i18n="a11y.hc">ניגודיות גבוהה</button>
+      <button type="button" data-tog="ul" aria-pressed="false" data-i18n="a11y.ul">הדגשת קישורים וכפתורים</button>
+      <button type="button" data-tog="rf" aria-pressed="false" data-i18n="a11y.rf">גופן פשוט</button>
+      <button type="button" data-tog="nm" aria-pressed="false" data-i18n="a11y.nm">עצירת תנועה</button>
+    </div>
+    <div class="opts">
+      <button type="button" id="a11yReset" class="quiet" data-i18n="a11y.reset">חזרה להגדרות הרגילות</button>
+      <button type="button" class="quiet" data-open="dlgA11y" data-i18n="a11y.statement">הצהרת הנגישות</button>
+      <button type="button" id="a11yClose" data-i18n="a11y.close">סגירה</button>
+    </div>
+  </section>
+
+  <main id="main" tabindex="-1">
+    <section class="hero" id="hero" aria-labelledby="heroTitle">
+      <div>
+        <h1 id="heroTitle" data-i18n-hl="hero.title">עוברים דירה? ממלאים פרטים פעם אחת, ומקבלים <mark class="hl">כל הנחה</mark> שמגיעה לכם.</h1>
+        <p class="sub" data-i18n="hero.sub">נגיד לכם את מי צריך לעדכן ומתי. נמצא בשבילכם הנחות בארנונה, בחשמל ובמים, ונכין את הבקשות.</p>
+        <ul class="facts" id="facts" data-i18n-aria="facts.label" aria-label="בקצרה"></ul>
+      </div>
+      <div class="label" data-i18n-aria="label.aria" aria-label="תקציר המעבר שלכם" role="group">
+        <dl>
+          <div class="row"><dt data-i18n="label.from">מאיפה</dt><dd id="lblFrom"></dd></div>
+          <div class="row"><dt data-i18n="label.to">לאן</dt><dd id="lblTo"></dd></div>
+          <div class="row"><dt data-i18n="label.when">מתי</dt><dd id="lblDate"></dd></div>
+          <div class="row"><dt data-i18n="label.ben">הנחות שמצאנו</dt><dd id="lblBen"></dd></div>
+          <div class="row"><dt data-i18n="label.status">מה כבר עודכן</dt><dd id="lblStatus"></dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <div class="progress" id="progress">
+      <p id="stepText" aria-live="polite"></p>
+      <div class="bar" aria-hidden="true"><i id="stepBar"></i></div>
+    </div>
+
+    <form id="f" novalidate>
+      <div class="errsum" id="errsum" role="alert" tabindex="-1" hidden></div>
+      <div id="steps"></div>
+      <input type="text" id="website" name="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div class="nav" id="nav">
+        <button type="button" id="back" data-i18n="nav.back">חזרה לשלב הקודם</button>
+        <button type="submit" class="primary" id="next" data-i18n="nav.next">המשך לשלב הבא</button>
+      </div>
+    </form>
+
+    <section id="results" aria-labelledby="rTitle" hidden>
+      <div class="panel">
+        <div class="sum">
+          <div>
+            <h2 id="rTitle" tabindex="-1"></h2>
+            <p class="lead" id="rSub"></p>
+          </div>
+          <p class="count"><span id="count"></span><span class="sr" data-i18n="res.countSr">עודכנו</span></p>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+        <div class="refbox" id="refbox" hidden></div>
+        <p class="lead" data-i18n="res.markHint">סמנו כל גוף שכבר עדכנתם. הסימון נשמר רק אצלכם.</p>
+        <button type="button" id="editBtn" data-i18n="res.edit">שינוי הפרטים</button>
+      </div>
+      <section id="moving" class="panel moving" aria-labelledby="mvTitle" hidden></section>
+      <section id="benefits" class="benefits" aria-labelledby="bTitle"></section>
+      <h2 class="listhead" id="updTitle" data-i18n="res.updTitle">את מי לעדכן</h2>
+      <div id="groups"></div>
+      <section id="partners" class="partners-wrap" aria-labelledby="pTitle" hidden></section>
+      <section class="panel dossier" aria-labelledby="dosTitle">
+        <h2 id="dosTitle" data-i18n="dos.title">כל הפרטים שלכם במקום אחד</h2>
+        <p class="muted" data-i18n="dos.hint">אפשר להעתיק ולהדביק בטפסים, במייל או בצ׳אט עם נציג.</p>
+        <p class="henote" id="dosHe" data-i18n="res.heNote" hidden></p>
+        <pre id="dossier" lang="he" dir="rtl"></pre>
+        <button type="button" class="primary" id="copyDossier" data-i18n="dos.copy">העתקת כל הפרטים</button>
+      </section>
+    </section>
+
+    <ul class="how" id="how">
+      <li><h2 data-i18n="how.1.t">קודם משרד הפנים</h2><p data-i18n="how.1.d"></p></li>
+      <li><h2 data-i18n="how.2.t">אחר כך חשמל, מים וארנונה</h2><p data-i18n="how.2.d"></p></li>
+      <li><h2 data-i18n="how.3.t">ובדרך, כל ההנחות</h2><p data-i18n="how.3.d"></p></li>
+    </ul>
+  </main>
+
+  <footer>
+    <button type="button" class="quiet" data-open="dlgA11y" data-i18n="foot.a11y">הצהרת נגישות</button>
+    <button type="button" class="quiet" data-open="dlgPrivacy" data-i18n="foot.privacy">מדיניות פרטיות</button>
+    <span id="moverLinks" class="mv-links"></span>
+    <p id="footNote"></p>
+  </footer>
+</div>
+
+<dialog id="dlgA11y" aria-labelledby="dlgA11yT">
+  <div class="dbody" tabindex="0">
+    <h2 id="dlgA11yT" data-i18n="dlg.a11y.t">הצהרת נגישות</h2>
+    <p class="henote henote-dlg" hidden></p>
+    <p data-i18n="dlg.a11y.p1"></p>
+    <h3 data-i18n="dlg.a11y.h1"></h3>
+    <ul><li data-i18n="dlg.a11y.l1"></li><li data-i18n="dlg.a11y.l2"></li><li data-i18n="dlg.a11y.l3"></li><li data-i18n="dlg.a11y.l4"></li><li data-i18n="dlg.a11y.l5"></li><li data-i18n="dlg.a11y.l6"></li></ul>
+    <h3 data-i18n="dlg.a11y.h2"></h3>
+    <p data-i18n="dlg.a11y.p2"></p>
+    <h3 data-i18n="dlg.a11y.h3"></h3>
+    <p id="a11yCoord"></p>
+    <p id="a11yReply"></p>
+    <p class="muted" id="a11yUpdated"></p>
+  </div>
+  <div class="dfoot"><button type="button" class="primary" data-close data-i18n="dlg.close">סגירה</button></div>
+</dialog>
+
+<dialog id="dlgPrivacy" aria-labelledby="dlgPrivT">
+  <div class="dbody" tabindex="0">
+    <h2 id="dlgPrivT" data-i18n="dlg.pr.t">מדיניות פרטיות</h2>
+    <p class="henote henote-dlg" hidden></p>
+    <p id="privMode"></p>
+    <h3 data-i18n="dlg.pr.h1"></h3>
+    <ul><li data-i18n="dlg.pr.l1"></li><li data-i18n="dlg.pr.l2"></li><li data-i18n="dlg.pr.l3"></li><li data-i18n="dlg.pr.l4"></li><li data-i18n="dlg.pr.l5"></li></ul>
+    <h3 data-i18n="dlg.pr.h2"></h3>
+    <ul><li data-i18n="dlg.pr.m1"></li><li data-i18n="dlg.pr.m2"></li><li id="prRetention"></li><li data-i18n="dlg.pr.m4"></li></ul>
+    <h3 data-i18n="dlg.pr.h3"></h3>
+    <p id="prContact"></p>
+    <p class="muted" id="prBiz"></p>
+  </div>
+  <div class="dfoot"><button type="button" class="primary" data-close data-i18n="dlg.close">סגירה</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<!--I18N-->
+<!--SITEINFO-->
+<!--CATALOG-->
+<!--CONFIG-->
+<!--APP-->
