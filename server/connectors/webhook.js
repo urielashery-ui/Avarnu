@@ -1,6 +1,7 @@
 // שליחת הפנייה ל-CRM / Make / Zapier / n8n. בלי תעודת זהות.
 // אם מוגדר WEBHOOK_SECRET, נשלחת חתימה בכותרת X-Movers-Signature (HMAC-SHA256 של גוף הבקשה).
 import { sign } from "../crypto.js";
+import { catalog as C } from "../validate.js";
 
 export function webhookPayload(lead, ref) {
   return {
@@ -22,7 +23,9 @@ export function webhookPayload(lead, ref) {
     benefitsCount: lead.benefits.length,
     // הסכמה לקבל הצעות שיווקיות (חוק התקשורת, סעיף 30א). בלי הסכמה — לא שולחים דיוור.
     marketingConsent: !!lead.marketing,
-    moveQuote: lead.moveStatus === "quotes" && !!lead.moversConsent
+    moveQuote: lead.moveStatus === "quotes" && !!lead.moversConsent,
+    supplies: lead.supplies === "need" ? { from: lead.suppliesFrom, date: lead.suppliesDate || null, deliverTo: lead.suppliesTo || null,
+      items: Object.fromEntries(C.kitLines(lead, "he").map((x) => [x.id, x.qty])) } : null
   };
 }
 

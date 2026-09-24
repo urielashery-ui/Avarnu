@@ -8,7 +8,7 @@
  *    נוצרת משימה במסך הניהול, והנציג מעדכן ידנית באתר הגוף.
  *    כשגוף יפתח API (או שיהיה הסכם עם ספק), כותבים לו פונקציית submit כאן — ורק הוא משתנה.
  */
-import { sendMail, customerChecklistEmail, businessNotifyEmail, moverLeadEmail } from "./email.js";
+import { sendMail, customerChecklistEmail, businessNotifyEmail, moverLeadEmail, supplierOrderEmail } from "./email.js";
 import { moversApi } from "../movers.js";
 import { postWebhook } from "./webhook.js";
 
@@ -55,11 +55,24 @@ async function dispatchMovers(lead, leadId, db, cfg) {
   return rows;
 }
 
+// הזמנת קרטונים לספק (רק אם הלקוח בחר משלוח והסכים)
+async function dispatchSupplies(lead, ref, leadId, db, cfg) {
+  if (lead.supplies !== "need" || lead.suppliesFrom !== "delivery" || !lead.suppliesConsent) return;
+  if (!cfg.suppliesTo) { db.event(leadId, "supplies", "אין ספק מוגדר (SUPPLIES_TO). צריך להזמין ידנית"); return; }
+  try {
+    await sendMail(cfg, { to: cfg.suppliesTo, ...supplierOrderEmail(lead, ref) });
+    db.event(leadId, "supplies", "ההזמנה נשלחה לספק");
+    db.setTask(leadId, "supplies", "todo", "נשלח לספק במייל. לוודא שתיאם עם הלקוח");
+  } catch (e) { db.event(leadId, "supplies:error", e.message); }
+}
+
 export async function runOutbound(lead, ref, leadId, db, cfg) {
   const movers = await dispatchMovers(lead, leadId, db, cfg);
+  await dispatchSupplies(lead, ref, leadId, db, cfg);
   const jobs = [];
   if (cfg.notifyTo) jobs.push(["notify", () => sendMail(cfg, { to: cfg.notifyTo, ...businessNotifyEmail(lead, ref, cfg) })]);
-  if (lead.email && lead.service === "self") jobs.push(["customer-email", () => sendMail(cfg, { to: lead.email, ...customerChecklistEmail(lead, ref, cfg, movers) })]);
+  const row = db.byRef(ref), editUrl = row && row.edit_token ? cfg.publicUrl + "/u/" + row.edit_token : "";
+  if (lead.email && lead.service === "self") jobs.push(["customer-email", () => sendMail(cfg, { to: lead.email, ...customerChecklistEmail(lead, ref, cfg, movers, editUrl) })]);
   if (cfg.webhookUrl) jobs.push(["webhook", () => postWebhook(cfg, lead, ref)]);
   for (const [name, fn] of jobs) {
     try { const r = await fn(); db.event(leadId, name, r || "ok"); }

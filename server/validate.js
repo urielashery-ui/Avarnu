@@ -9,14 +9,16 @@ const C = globalThis.MoversCatalog;
 const TEXT = ["firstName", "lastName", "tz", "phone", "email", "people", "newStreet", "newNum", "newApt", "newCity", "zip", "floor",
   "oldStreet", "oldApt", "oldCity", "moveDate", "landlord", "elecContract", "elecMeter", "elecRead", "elecSupplier",
   "waterMeter", "waterRead", "gas", "gasRead", "isp", "tv", "mobile", "hmo", "bank", "card", "tenure", "service", "kidsCount",
-  "moveStatus", "rooms", "oldFloor", "dateFlex", "specialItems", "lang"];
+  "moveStatus", "rooms", "oldFloor", "dateFlex", "specialItems", "lang",
+  "supplies", "suppliesFrom", "suppliesDate", "suppliesTo"].concat(C.KIT);
 const BOOL = ["xCar", "xKids", "xInsurance", "xPension", "xEmployer", "xPost", "consent", "poa", "marketing",
-  "oldElevator", "newElevator", "packing", "assembly", "storage", "moversConsent"].concat(Object.keys(C.householdLabels));
+  "oldElevator", "newElevator", "packing", "assembly", "storage", "moversConsent", "suppliesConsent"].concat(Object.keys(C.householdLabels));
 const ENUMS = {
   tenure: ["rent", "own"], service: ["self", "concierge"], elecSupplier: ["", "iec", "private"],
   gas: ["", "אמישראגז", "פזגז", "סופרגז", "central", "אחר"],
   isp: ["", "בזק", "HOT", "פרטנר", "סלקום", "אחר"], tv: ["", "yes", "HOT", "פרטנר", "סלקום", "אחר"],
   lang: ["", "he", "en", "ru", "ar"], moveStatus: ["", "quotes", "booked", "self"], rooms: ["", "1", "2", "3", "4", "5", "6"], dateFlex: ["", "exact", "flex"],
+  supplies: ["", "none", "need"], suppliesFrom: ["", "movers", "delivery", "self"], suppliesTo: ["", "old", "new"],
   mobile: ["", "פלאפון", "סלקום", "פרטנר", "הוט מובייל", "גולן טלקום", "אחר"], hmo: ["", "כללית", "מכבי", "מאוחדת", "לאומית"]
 };
 const REQUIRED = {
@@ -45,6 +47,23 @@ export function validateLead(input) {
     if (!lead.rooms) errors.rooms = "חסר מספר חדרים";
     if (!lead.moversConsent) errors.moversConsent = "חסרה הסכמה להעביר את הפרטים למובילים";
   } else lead.moversConsent = false;
+  // קרטונים וחומרי אריזה
+  if (lead.supplies === "need") {
+    if (!lead.rooms) errors.rooms = "חסר מספר חדרים";
+    for (const k of C.KIT) if (lead[k] && !/^\d{1,3}$/.test(lead[k])) errors[k] = "כמות לא תקינה";
+    lead.suppliesFrom = lead.suppliesFrom || "self";
+    if (lead.suppliesFrom === "movers" && lead.moveStatus !== "quotes") errors.suppliesFrom = "המובילים יביאו קרטונים רק אם ביקשתם הצעות ממובילים";
+    if (lead.suppliesFrom === "delivery") {
+      if (!C.validDate(lead.suppliesDate)) errors.suppliesDate = "תאריך משלוח לא תקין";
+      else if (lead.moveDate && lead.suppliesDate > lead.moveDate) errors.suppliesDate = "המשלוח צריך להגיע לפני יום המעבר";
+      lead.suppliesTo = lead.suppliesTo || "old";
+      if (lead.suppliesTo === "old" && !(lead.oldStreet && lead.oldCity)) errors.suppliesTo = "חסרה הכתובת הנוכחית למשלוח";
+      if (!lead.suppliesConsent) errors.suppliesConsent = "חסרה הסכמה להעביר את הפרטים לספק האריזות";
+    } else { lead.suppliesConsent = false; lead.suppliesDate = ""; lead.suppliesTo = ""; }
+  } else {
+    lead.supplies = lead.supplies || "none"; lead.suppliesFrom = ""; lead.suppliesDate = ""; lead.suppliesTo = ""; lead.suppliesConsent = false;
+    for (const k of C.KIT) lead[k] = "";
+  }
   for (const k of ["people", "kidsCount", "oldFloor", "floor"]) if (lead[k] && !/^\d{1,2}$/.test(lead[k])) errors[k] = "מספר לא תקין";
   if (!lead.consent) errors.consent = "חסרה הסכמה לשמירת הפרטים";
   if (lead.service === "concierge" && !lead.poa) errors.poa = "חסרה הסכמה לפנייה בשמכם";

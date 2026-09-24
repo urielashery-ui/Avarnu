@@ -8,6 +8,7 @@ import { mountMovers } from "./admin-movers.js";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const STATUS = { new: "חדשה", in_progress: "בטיפול", done: "הסתיימה", awaiting_payment: "ממתינה לתשלום" };
 const TASK = { todo: "לטפל", done: "בוצע", auto: "מתעדכן לבד", na: "לא רלוונטי", error: "נכשל" };
+const CB = { todo: "לתאם", done: "חיברנו שיחה", failed: "לא הצליח", canceled: "בוטל" };
 const SERVICE = { self: "מעדכן בעצמו", concierge: "אנחנו מעדכנים" };
 const d8 = (iso) => iso ? new Date(iso).toLocaleString("he-IL", { timeZone: "Asia/Jerusalem", dateStyle: "short", timeStyle: "short" }) : "";
 
@@ -33,12 +34,12 @@ button.del{background:var(--e);border-color:var(--e)}.muted{color:var(--m)}
 table.narrow{min-width:0}
 .form .fld{display:flex;flex-direction:column;gap:.2rem;margin-bottom:.7rem;max-width:32rem}.form .fld input[type=text]{width:100%}
 .form fieldset{margin:.5rem 0 1rem}.err{color:var(--e);font-weight:bold}.rev{list-style:none;padding:0}
-.pill.new{border-color:var(--e);color:var(--e);font-weight:bold}.pill.done{border-color:var(--a);color:var(--a)}
+.pill.new{border-color:var(--e);color:var(--e);font-weight:bold}.cbf{display:flex;gap:.4rem;flex-wrap:wrap}.pill.done{border-color:var(--a);color:var(--a)}
 `;
 const page = (title, body) => `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc(title)} · ניהול</title><link rel="stylesheet" href="/admin/admin.css"></head>
-<body><div class="w"><nav class="top" aria-label="ניהול"><strong>עברנו · ניהול</strong><a href="/admin">כל הפניות</a><a href="/admin/movers">מובילים</a><a href="/admin/stats">נתונים</a><a href="/admin/export.csv">ייצוא לאקסל</a></nav>
+<body><div class="w"><nav class="top" aria-label="ניהול"><strong>עברנו · ניהול</strong><a href="/admin">כל הפניות</a><a href="/admin/callbacks">שיחות לתאם</a><a href="/admin/movers">מובילים</a><a href="/admin/stats">נתונים</a><a href="/admin/export.csv">ייצוא לאקסל</a></nav>
 <main>${body}</main></div></body></html>`;
 
 export function adminRouter({ db, crypt, cfg }) {
@@ -108,7 +109,9 @@ export function adminRouter({ db, crypt, cfg }) {
       ["חשמל", [d.elecSupplier === "private" ? "ספק פרטי" : "", d.elecContract && "חוזה " + d.elecContract, d.elecMeter && "מונה " + d.elecMeter, d.elecRead && "קריאה " + d.elecRead].filter(Boolean).join(" · ")],
       ["מים", [d.waterMeter && "מונה " + d.waterMeter, d.waterRead && "קריאה " + d.waterRead].filter(Boolean).join(" · ")],
       ["גז", [d.gas === "central" ? "מרכזי" : d.gas, d.gasRead && "קריאה " + d.gasRead].filter(Boolean).join(" · ")],
-      ["הסכמות", ["שמירת פרטים", d.poa ? "פנייה בשמו (צריך ייפוי כוח חתום)" : "", d.marketing ? "מסכים לקבל הצעות" : "לא מסכים לדיוור"].filter(Boolean).join(" · ")],
+      ["קרטונים", d.supplies !== "need" ? "" : ({ delivery: "משלוח ל" + (d.suppliesTo === "new" ? "דירה החדשה" : "דירה הנוכחית") + " ב-" + C.fmtDate(d.suppliesDate), movers: "המובילים יביאו", self: "רשימת קניות" }[d.suppliesFrom] || "") +
+        " · " + C.kitLines(d, "he").map((x) => x.name + ": " + x.qty).join(" · ")],
+      ["הסכמות", ["שמירת פרטים", d.poa ? "פנייה בשמו (צריך ייפוי כוח חתום)" : "", d.suppliesConsent ? "העברה לספק האריזות" : "", d.marketing ? "מסכים לקבל הצעות" : "לא מסכים לדיוור"].filter(Boolean).join(" · ")],
       ["תשלום", row.amount ? row.amount + " ₪ · " + (row.paid_at ? "שולם " + d8(row.paid_at) : "לא שולם") : ""]]
       .filter((x) => x[1]).map(([k, v, raw]) => `<dt>${esc(k)}</dt><dd>${raw ? v : esc(v)}</dd>`).join("");
     const items = Object.fromEntries(C.build(d).map((i) => [i.id, i]).concat(C.benefits(d).map((b) => ["b:" + b.id, b])));
@@ -127,6 +130,9 @@ export function adminRouter({ db, crypt, cfg }) {
       <p class="muted">התקבלה ${esc(d8(row.created_at))} · ${esc(SERVICE[row.service])}</p>
       <section class="card" aria-labelledby="h-d"><h2 id="h-d">פרטי הלקוח</h2><dl>${info}</dl></section>
       ${moversSection(row.id)}
+      ${(() => { const cbs = db.callbacksFor(row.id); return cbs.length ? `<section class="card" aria-labelledby="h-cb"><h2 id="h-cb">שיחות לתאם</h2><ul>${cbs.map((c) =>
+        `<li><strong>${esc(c.title)}</strong> · ${esc(C.fmtDate(c.day))} <span dir="ltr">${esc(c.slot)}</span> · ${esc(CB[c.status])}${cbNote(c) ? `<br><span class="muted">${esc(cbNote(c))}</span>` : ""}</li>`).join("")}</ul>
+        <p><a href="/admin/callbacks">לכל השיחות</a></p></section>` : ""; })()}
       <section class="card" aria-labelledby="h-b"><h2 id="h-b">הנחות שכדאי לבקש</h2><ul>${benefitsList}</ul></section>
       <section class="card" aria-labelledby="h-t"><h2 id="h-t">משימות לפי גוף והנחה</h2>
         <form method="post" action="/admin/leads/${esc(row.ref)}/tasks"><div class="t"><table>
@@ -172,6 +178,34 @@ export function adminRouter({ db, crypt, cfg }) {
     res.redirect(303, "/admin");
   });
 
+  // שיחות לתאם: הלקוח ביקש שנמתין על הקו של גוף ונחבר אותו
+  const cbNote = (c) => { if (!c.note) return ""; try { return crypt.decrypt(c.note).note || ""; } catch { return ""; } };
+  const cbSelect = (c) => `<form method="post" action="/admin/callbacks/${c.id}" class="cbf"><label class="sr" for="cb-${c.id}">מצב השיחה</label>
+    <select id="cb-${c.id}" name="status">${Object.entries(CB).map(([k, v]) => `<option value="${k}"${c.status === k ? " selected" : ""}>${v}</option>`).join("")}</select>
+    <button type="submit">עדכון</button></form>`;
+  r.get("/callbacks", (req, res) => {
+    const status = CB[req.query.status] ? req.query.status : (req.query.status === "all" ? "" : "todo");
+    const rows = db.callbacksList(status);
+    const chip = (k, label) => `<a href="/admin/callbacks?status=${k}"${(status || "all") === k ? ' aria-current="page"' : ""}>${label}</a>`;
+    const body = rows.map((c) => {
+      const d = open(c) || {};
+      return `<tr><td class="n">${esc(C.fmtDate(c.day))}</td><td class="n" dir="ltr">${esc(c.slot)}</td><td>${esc(c.title)}</td>
+        <td><a href="/admin/leads/${esc(c.ref)}">${esc((d.firstName || "") + " " + (d.lastName || ""))}</a>${d.lang && d.lang !== "he" ? ` <span class="pill">${esc(C.LANG_NAMES_HE[d.lang])}</span>` : ""}</td>
+        <td><a href="tel:${esc(C.digits(d.phone))}" dir="ltr">${esc(d.phone)}</a></td><td>${esc(cbNote(c))}</td><td>${cbSelect(c)}</td></tr>`;
+    }).join("");
+    res.send(page("שיחות לתאם", `<h1>שיחות לתאם</h1>
+      <p class="muted">איך עושים את זה: בזמן שהלקוח בחר מתקשרים לגוף וממתינים לנציג. כשעונים, מוסיפים את הלקוח לשיחה (שיחת ועידה), מציגים אותו בשם, ויוצאים מהשיחה. לא הצלחתם בזמן הזה? מתקשרים ללקוח ומתאמים זמן אחר.</p>
+      <div class="chips" role="navigation" aria-label="סינון">${chip("todo", "לתאם")}${chip("done", "חוברו")}${chip("failed", "לא הצליח")}${chip("all", "הכול")}</div>
+      ${rows.length ? `<div class="t"><table><thead><tr><th scope="col">יום</th><th scope="col">שעות</th><th scope="col">גוף</th><th scope="col">לקוח</th><th scope="col">טלפון</th><th scope="col">הערה</th><th scope="col">מצב</th></tr></thead>
+      <tbody>${body}</tbody></table></div>` : "<p>אין שיחות להצגה.</p>"}`));
+  });
+  r.post("/callbacks/:id", (req, res) => {
+    const id = Number(req.params.id), s = String(req.body.status || "");
+    const c = db.callbacksList("").find((x) => x.id === id);
+    if (c && CB[s]) { db.setCallback(id, s); db.event(c.lead_id, "callback:" + s, c.title + " · " + CB[s]); }
+    res.redirect(303, "/admin/callbacks");
+  });
+
   // נתונים עסקיים: כמה פניות, מאיפה, אילו הנחות, קליקים על שותפים, משפך בטופס
   r.get("/stats", (req, res) => {
     const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 30;
@@ -188,7 +222,7 @@ export function adminRouter({ db, crypt, cfg }) {
     const funnel = ["step:0", "step:1", "step:2", "step:3", "step:4", "step:5", "results"].map((k) => [k === "results" ? "הגיעו לרשימה" : "שלב " + (Number(k.slice(5)) + 1), c["view:" + k] || 0]).filter(([, v], i) => v || i < 5);
     const clicks = Object.entries(c).filter(([k]) => k.startsWith("click:")).map(([k, v]) => [k.slice(6), v]).sort((a, b) => b[1] - a[1]);
     const tiles = [["פניות", rows.length], ["שירות מלא", rows.filter((r) => r.service === "concierge").length], ["הסכימו לדיוור", rows.filter((r) => r.marketing).length],
-      ["קליקים על שותפים", clicks.reduce((s, x) => s + x[1], 0)]].concat(cfg.payments.enabled ? [["הכנסות (₪)", revenue]] : []);
+      ["קליקים על שותפים", clicks.reduce((s, x) => s + x[1], 0)], ["צפו בסרטון", c["view:video"] || 0], ["בקשות לשיחה עם נציג", c["callback"] || 0]].concat(cfg.payments.enabled ? [["הכנסות (₪)", revenue]] : []);
     res.send(page("נתונים", `<h1>נתונים</h1>
       <div class="chips" role="navigation" aria-label="טווח זמן">${[7, 30, 90].map((n) => `<a href="/admin/stats?days=${n}"${n === days ? ' aria-current="page"' : ""}>${n} ימים</a>`).join("")}</div>
       <section class="tiles" aria-label="סיכום">${tiles.map(([k, v]) => `<div class="tile"><span class="muted">${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</section>

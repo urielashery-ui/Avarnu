@@ -17,7 +17,12 @@
     var D = root.MoversI18N || {};
     var s = (D[lang] && D[lang][key] != null) ? D[lang][key] : (D.he && D.he[key] != null ? D.he[key] : key);
     if (vars) s = String(s).replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? vars[k] : m; });
-    return s;
+    return lang === "ar" ? ltrNums(s) : s;
+  }
+  // בערבית, הדפדפן הופך סדר של מספרים עם מקף או נקודה (050-1234567 → 1234567-050, 13.10.2026 → 2026.10.13).
+  // עוטפים רצף מספרים בבידוד משמאל-לימין (LRI … PDI), כדי שיוצג נכון.
+  function ltrNums(s) {
+    return String(s).replace(/\u2066[^\u2069]*\u2069|\d[\d.,:\/\-–]*\d/g, function (m) { return m.charAt(0) === "\u2066" ? m : "\u2066" + m + "\u2069"; });
   }
 
   // ---------- ערים: שם קנוני בעברית + תרגומים ----------
@@ -82,7 +87,9 @@
   function addrL(d, p, lang) {
     var s = d[p + "Street"], n = d[p + "Num"], a = d[p + "Apt"], c = d[p + "City"];
     if (!s && !c) return "";
-    return [s && (s + " " + (n || "")).trim(), a && T(lang, "c.apt", { n: a }), c && cityName(c, lang)].filter(Boolean).join(", ");
+    // כל חלק עטוף בבידוד כיווני, כדי שרחוב באותיות לועזיות לא ישבש את הסדר בעברית ובערבית
+    return [s && (s + " " + (n || "")).trim(), a && T(lang, "c.apt", { n: a }), c && cityName(c, lang)].filter(Boolean)
+      .map(function (x) { return "\u2068" + x + "\u2069"; }).join(lang === "ar" ? "، " : ", ");
   }
   function fmtDate(v) {
     if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return "";
@@ -342,6 +349,65 @@
   };
   var LANG_NAMES_HE = { he: "עברית", en: "אנגלית", ru: "רוסית", ar: "ערבית" };
 
+  // ---------- פרטים שאפשר להשלים אחר כך ----------
+  // רק פרטים לא רגישים, שבדרך כלל חסרים ברגע המילוי (מונים, הכתובת הישנה). אפשר לעדכן אותם גם אחרי השליחה.
+  var LATER = ["elecContract", "elecMeter", "elecRead", "waterMeter", "waterRead", "gasRead", "landlord", "oldStreet", "oldCity"];
+  function missing(d) {
+    var seen = {}, out = [];
+    build(d).forEach(function (i) {
+      i.need.forEach(function (k) { if (LATER.indexOf(k) >= 0 && !d[k] && !seen[k]) { seen[k] = 1; out.push(k); } });
+    });
+    return out;
+  }
+
+  // ---------- תיאום שיחה עם נציג של גוף ----------
+  // גופים שיש להם מוקד טלפוני. נציג שלנו ממתין על הקו, ומחבר את הלקוח כשעונים.
+  var CALL_IDS = ["moin", "btl", "tax", "elec", "water", "arnona", "arnonaOld", "gas", "isp", "tv", "mobile", "hmo", "bank", "card", "ins", "pension"];
+  var SLOTS = ["8-10", "10-12", "12-14", "14-16", "16-18"];
+  // ימים א׳–ה׳, ממחר ועד 30 יום קדימה
+  function validCallDay(v) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) return false;
+    var t = new Date(v + "T12:00:00Z"), today = new Date(new Date().toISOString().slice(0, 10) + "T12:00:00Z");
+    var diff = Math.round((t - today) / 864e5), wd = t.getUTCDay();
+    return !isNaN(diff) && diff >= 1 && diff <= 30 && wd !== 5 && wd !== 6;
+  }
+  function nextCallDay() {
+    for (var i = 1; i < 8; i++) {
+      var s = new Date(Date.now() + i * 864e5).toISOString().slice(0, 10);
+      if (validCallDay(s)) return s;
+    }
+    return "";
+  }
+
+  // ---------- ערכת אריזה ----------
+  // הערכה לפי מספר חדרים בדירה שיוצאים ממנה. מבוסס על מה שמובילים ממליצים בדרך כלל: 10–12 קרטונים לחדר.
+  var KIT = ["kBoxes", "kBigBoxes", "kWardrobe", "kBubble", "kTape", "kStretch"];
+  function kitFor(rooms) {
+    var r = Math.min(6, Math.max(1, parseInt(rooms, 10) || 0));
+    if (!parseInt(rooms, 10)) return null;
+    var boxes = 8 + 11 * r;
+    return { kBoxes: boxes, kBigBoxes: 2 + 2 * r, kWardrobe: Math.ceil(r / 2), kBubble: r <= 2 ? 1 : r <= 4 ? 2 : 3,
+      kTape: Math.ceil(boxes / 12) + 1, kStretch: r <= 2 ? 1 : 2 };
+  }
+  // השורות בפועל: מה שהמשתמש השאיר או שינה בטופס (0 = לא צריך)
+  function kitLines(d, lang) {
+    var auto = kitFor(d.rooms) || {};
+    return KIT.map(function (k) {
+      var v = d[k] === "" || d[k] == null ? auto[k] : parseInt(d[k], 10);
+      return { id: k, qty: v || 0, name: T(lang || "he", "kit." + k) };
+    }).filter(function (x) { return x.qty > 0; });
+  }
+  function kitText(d, lang) {
+    return kitLines(d, lang).map(function (x) { return "• " + x.name + ": " + x.qty; }).join("\n");
+  }
+  // תאריך משלוח מומלץ: 5 ימים לפני המעבר, ולא לפני מחרתיים
+  function suppliesDefaultDate(moveDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(moveDate || "")) return "";
+    var day = 864e5, mt = new Date(moveDate + "T12:00:00").getTime(), min = Date.now() + 2 * day;
+    if (isNaN(mt)) return "";
+    return new Date(Math.min(Math.max(mt - 5 * day, min), mt)).toISOString().slice(0, 10);
+  }
+
   // כל המזהים האפשריים — לאימות בשרת
   var allIds = ["moin", "mail", "btl", "tax", "car", "elec", "water", "arnona", "arnonaOld", "gas", "isp", "tv", "mobile", "hmo", "bank", "card", "ins", "pension", "post", "kids", "emp", "vaad"];
 
@@ -349,6 +415,7 @@
     T: T, LANGS: LANGS, RTL: RTL, LANG_NAMES_HE: LANG_NAMES_HE,
     build: build, benefits: benefits, householdLabels: householdLabels, benefitCats: benefitCats, groups: groups, labels: labels,
     addr: addr, addrL: addrL, fmtDate: fmtDate, allIds: allIds, canonCity: canonCity, cityName: cityName, cityList: cityList, brand: brand,
-    validTz: validTz, validPhone: validPhone, validEmail: validEmail, validZip: validZip, validDate: validDate, digits: digits
+    validTz: validTz, validPhone: validPhone, validEmail: validEmail, validZip: validZip, validDate: validDate, digits: digits, ltrNums: ltrNums,
+    LATER: LATER, missing: missing, CALL_IDS: CALL_IDS, SLOTS: SLOTS, validCallDay: validCallDay, nextCallDay: nextCallDay, KIT: KIT, kitFor: kitFor, kitLines: kitLines, kitText: kitText, suppliesDefaultDate: suppliesDefaultDate
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

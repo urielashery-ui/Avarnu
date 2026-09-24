@@ -63,6 +63,14 @@ export function openDb(path) {
       created_at TEXT NOT NULL, updated_at TEXT NOT NULL, first_action_at TEXT, expires_at TEXT NOT NULL,
       UNIQUE (lead_id, mover_id)
     );
+    -- בקשות לתיאום שיחה עם נציג של גוף (אנחנו ממתינים על הקו ומחברים את הלקוח)
+    CREATE TABLE IF NOT EXISTS callbacks (
+      id INTEGER PRIMARY KEY,
+      lead_id INTEGER NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+      body_id TEXT NOT NULL, title TEXT NOT NULL, day TEXT NOT NULL, slot TEXT NOT NULL,
+      note TEXT, status TEXT NOT NULL DEFAULT 'todo',   -- todo | done | failed | canceled
+      created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS reviews (
       id INTEGER PRIMARY KEY,
       lead_id INTEGER UNIQUE REFERENCES leads(id) ON DELETE SET NULL,
@@ -73,13 +81,15 @@ export function openDb(path) {
   `);
   // הרחבות לטבלה קיימת (בטוח להריץ שוב)
   for (const col of ["amount INTEGER NOT NULL DEFAULT 0", "paid_at TEXT", "provider_ref TEXT", "marketing INTEGER NOT NULL DEFAULT 0",
-    "move_quote INTEGER NOT NULL DEFAULT 0", "review_token TEXT", "review_sent_at TEXT"]) {
+    "move_quote INTEGER NOT NULL DEFAULT 0", "review_token TEXT", "review_sent_at TEXT",
+    "edit_token TEXT", "remind_count INTEGER NOT NULL DEFAULT 0", "remind_at TEXT"]) {
     try { db.exec("ALTER TABLE leads ADD COLUMN " + col); } catch { /* כבר קיים */ }
   }
+  try { db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_leads_edit ON leads(edit_token)"); } catch { /* */ }
   const now = () => new Date().toISOString();
 
   const q = {
-    insertLead: db.prepare("INSERT INTO leads (ref, created_at, service, new_city, move_date, data, status, amount, marketing, move_quote, review_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
+    insertLead: db.prepare("INSERT INTO leads (ref, created_at, service, new_city, move_date, data, status, amount, marketing, move_quote, review_token, edit_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
     markPaid: db.prepare("UPDATE leads SET status = 'new', paid_at = ?, provider_ref = ? WHERE id = ? AND status = 'awaiting_payment'"),
     purgePending: db.prepare("DELETE FROM leads WHERE status = 'awaiting_payment' AND created_at < ?"),
     bump: db.prepare("INSERT INTO counters (day, key, n) VALUES (?, ?, 1) ON CONFLICT(day, key) DO UPDATE SET n = n + 1"),
@@ -95,15 +105,25 @@ export function openDb(path) {
     setTask: db.prepare("UPDATE tasks SET status = ?, note = ?, updated_at = ? WHERE lead_id = ? AND body_id = ?"),
     setStatus: db.prepare("UPDATE leads SET status = ? WHERE id = ?"),
     del: db.prepare("DELETE FROM leads WHERE id = ?"),
+    byEdit: db.prepare("SELECT * FROM leads WHERE edit_token = ?"),
+    setData: db.prepare("UPDATE leads SET data = ? WHERE id = ?"),
+    reminded: db.prepare("UPDATE leads SET remind_count = remind_count + 1, remind_at = ? WHERE id = ?"),
+    stopRemind: db.prepare("UPDATE leads SET remind_count = 99 WHERE id = ?"),
+    remindCandidates: db.prepare("SELECT * FROM leads WHERE edit_token IS NOT NULL AND remind_count < 2 AND status NOT IN ('awaiting_payment', 'done')"),
+    addCallback: db.prepare("INSERT INTO callbacks (lead_id, body_id, title, day, slot, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"),
+    callbacksFor: db.prepare("SELECT * FROM callbacks WHERE lead_id = ? ORDER BY day, slot"),
+    openCallbackCount: db.prepare("SELECT COUNT(*) AS n FROM callbacks WHERE lead_id = ? AND status = 'todo'"),
+    callbacksList: db.prepare("SELECT c.*, l.ref, l.data FROM callbacks c JOIN leads l ON l.id = c.lead_id WHERE (? = '' OR c.status = ?) ORDER BY c.day, c.slot LIMIT 500"),
+    setCallback: db.prepare("UPDATE callbacks SET status = ?, updated_at = ? WHERE id = ?"),
     purge: db.prepare("DELETE FROM leads WHERE COALESCE(move_date, substr(created_at, 1, 10)) < ?")
   };
 
   return {
     raw: db,
-    createLead({ ref, service, newCity, moveDate, data, tasks, status = "new", amount = 0, marketing = false, moveQuote = false, reviewToken = null, onCreate }) {
+    createLead({ ref, service, newCity, moveDate, data, tasks, status = "new", amount = 0, marketing = false, moveQuote = false, reviewToken = null, editToken = null, onCreate }) {
       db.exec("BEGIN");
       try {
-        const r = q.insertLead.run(ref, now(), service, newCity, moveDate, data, status, amount, marketing ? 1 : 0, moveQuote ? 1 : 0, reviewToken);
+        const r = q.insertLead.run(ref, now(), service, newCity, moveDate, data, status, amount, marketing ? 1 : 0, moveQuote ? 1 : 0, reviewToken, editToken);
         const id = Number(r.lastInsertRowid);
         for (const t of tasks) q.insertTask.run(id, t.id, t.title, t.status, now());
         q.insertEvent.run(id, now(), "created", service);
@@ -114,6 +134,16 @@ export function openDb(path) {
     },
     event(leadId, type, detail) { q.insertEvent.run(leadId, now(), type, detail == null ? null : String(detail).slice(0, 500)); },
     byRef: (ref) => q.byRef.get(ref),
+    byEdit: (token) => (token ? q.byEdit.get(String(token)) : undefined),
+    setData: (id, data) => q.setData.run(data, id),
+    reminded: (id) => q.reminded.run(now(), id),
+    stopRemind: (id) => q.stopRemind.run(id),
+    remindCandidates: () => q.remindCandidates.all(),
+    addCallback: (leadId, c) => Number(q.addCallback.run(leadId, c.body, c.title, c.day, c.slot, c.note || null, now(), now()).lastInsertRowid),
+    callbacksFor: (leadId) => q.callbacksFor.all(leadId),
+    openCallbackCount: (leadId) => q.openCallbackCount.get(leadId).n,
+    callbacksList: (status = "") => q.callbacksList.all(status, status),
+    setCallback: (id, status) => q.setCallback.run(status, now(), id),
     list: ({ status = "", limit = 50, offset = 0 } = {}) => q.list.all(status, status, limit, offset),
     counts: () => Object.fromEntries(q.count.all().map((r) => [r.status, r.n])),
     tasks: (id) => q.tasks.all(id),

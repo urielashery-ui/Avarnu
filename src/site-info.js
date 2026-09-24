@@ -9,5 +9,7 @@ globalThis.MOVERS_SITE = {
   a11yUpdated: "",       // תאריך עדכון ההצהרה, למשל "01.11.2026"
   privacyName: "",       // אחראי/ת פרטיות
   privacyEmail: "",
-  retentionDays: "180"   // צריך להתאים ל-RETENTION_DAYS בשרת
+  retentionDays: "180",  // צריך להתאים ל-RETENTION_DAYS בשרת
+  contactEmail: "",      // מייל ליצירת קשר שיופיע בתחתית האתר, למשל "hello@avarnu.com"
+  whatsapp: ""           // מספר וואטסאפ עסקי, למשל "050-1234567". ריק = לא מוצג
 };

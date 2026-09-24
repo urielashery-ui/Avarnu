@@ -1,32 +1,40 @@
 <title>עברנו</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Rubik:wght@400;500;600;700&display=swap">
 <style>
+/* ערכת צבעים: ירוק חי וביתי (צמחייה, בית יפה) על רקע שמנת חמים, וצהוב שמש לכפתורי הפעולה. יש גם מצב כהה. */
 :root{
-  --ground:#F6F8FC; --surface:#FFFFFF; --sunk:#EDF1F8; --ink:#16233F; --muted:#4D5A75; --line:#D6DEEC; --field:#66748F;
-  --accent:#2A63C9; --accent-ink:#FFFFFF; --accent-soft:#E4EEFF;
-  --warm:#B63A1E; --warm-soft:#FFE7DC; --sun:#FFC940; --sun-ink:#2B2100; --sun-soft:#FFF3CC; --mint-soft:#DDF4E8;
+  color-scheme:light;
+  --ground:#FAF7F0; --surface:#FFFFFF; --sunk:#F4EFE4; --ink:#13261E; --muted:#4D5E56; --line:#E3DCCD; --field:#76857D;
+  --accent:#12704E; --accent-ink:#FFFFFF; --accent-soft:#E3F2EA;
+  --btn:#FFC23D; --btn-ink:#13261E;
+  --warm:#A8421F; --warm-soft:#FBE9E1; --sun:#FFC23D; --sun-ink:#2B1D00; --sun-soft:#FFF3D1; --mint-soft:#E2F4EA;
+  --ok:#0E6A3B; --warn:#8A5200; --err:#B3261E; --focus:#0B6E4F;
+  --band:#0D4735; --band2:#177A58; --grad:linear-gradient(110deg,#0D4735,#177A58 55%,#3DBE82);
+  --glow:0 0 0 1px rgba(13,71,53,.06),0 26px 60px -34px rgba(13,71,53,.45); --shadow:0 16px 40px -28px rgba(19,38,30,.35); --chip:var(--surface);
   --tape:var(--sun); --tape-ink:var(--sun-ink);
-  --ok:#1B7A43; --warn:#8A5200; --err:#B42318; --focus:#1D4ED8;
-  --shadow:0 12px 32px -20px rgba(30,60,120,.32);
-  --display:"Secular One","Arial Hebrew",Arial,sans-serif;
-  --body:"Rubik","Segoe UI",Arial,sans-serif;
+  --display:"Assistant","Rubik","Arial Hebrew",Arial,sans-serif;
+  --body:"Assistant","Rubik","Segoe UI",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    color-scheme:dark;
-    --ground:#0F1626; --surface:#172238; --sunk:#1F2C45; --ink:#EDF2FF; --muted:#A9B6CF; --line:#2F3D5A; --field:#8595B3;
-    --accent:#8DB4FF; --accent-ink:#0A1630; --accent-soft:#1F3358;
-    --warm:#FF9C7A; --warm-soft:#3A261E; --sun:#FFC940; --sun-soft:#3A3218; --mint-soft:#173A2C;
-    --ok:#5BD08E; --warn:#F0B43A; --err:#FF8A7A; --focus:#9DB8FF; --shadow:none;
+  color-scheme:dark;
+  --ground:#07130E; --surface:#0E2019; --sunk:#132B22; --ink:#EAF7F0; --muted:#A8C6B8; --line:#21443A; --field:#7FA597;
+  --accent:#6FD8A6; --accent-ink:#04150E; --accent-soft:#12372B;
+  --warm:#FF9E80; --warm-soft:#3A2019; --sun:#FFC23D; --sun-ink:#1A1200; --sun-soft:#3A3014; --mint-soft:#10342A;
+  --ok:#4ADE80; --warn:#FBBF24; --err:#FF8A80; --focus:#FFC23D;
+  --band:#0A2E22; --band2:#0F4533; --grad:linear-gradient(110deg,#6FD8A6,#2FB47C);
+  --glow:0 0 0 1px rgba(111,216,166,.16),0 24px 60px -30px rgba(0,0,0,.8); --shadow:0 18px 50px -26px rgba(0,0,0,.85); --chip:rgba(255,255,255,.04);
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --ground:#0F1626; --surface:#172238; --sunk:#1F2C45; --ink:#EDF2FF; --muted:#A9B6CF; --line:#2F3D5A; --field:#8595B3;
-  --accent:#8DB4FF; --accent-ink:#0A1630; --accent-soft:#1F3358;
-  --warm:#FF9C7A; --warm-soft:#3A261E; --sun:#FFC940; --sun-soft:#3A3218; --mint-soft:#173A2C;
-  --ok:#5BD08E; --warn:#F0B43A; --err:#FF8A7A; --focus:#9DB8FF; --shadow:none;
+  --ground:#07130E; --surface:#0E2019; --sunk:#132B22; --ink:#EAF7F0; --muted:#A8C6B8; --line:#21443A; --field:#7FA597;
+  --accent:#6FD8A6; --accent-ink:#04150E; --accent-soft:#12372B;
+  --warm:#FF9E80; --warm-soft:#3A2019; --sun:#FFC23D; --sun-ink:#1A1200; --sun-soft:#3A3014; --mint-soft:#10342A;
+  --ok:#4ADE80; --warn:#FBBF24; --err:#FF8A80; --focus:#FFC23D;
+  --band:#0A2E22; --band2:#0F4533; --grad:linear-gradient(110deg,#6FD8A6,#2FB47C);
+  --glow:0 0 0 1px rgba(111,216,166,.16),0 24px 60px -30px rgba(0,0,0,.8); --shadow:0 18px 50px -26px rgba(0,0,0,.85); --chip:rgba(255,255,255,.04);
 }
 /* ניגודיות גבוהה — גובר על שני המצבים */
 #app.hc{
@@ -34,12 +42,12 @@
   --ground:#FFFFFF; --surface:#FFFFFF; --sunk:#FFFFFF; --ink:#000000; --muted:#000000; --line:#000000; --field:#000000;
   --accent:#00338A; --accent-ink:#FFFFFF; --accent-soft:#FFFFFF; --warm:#000000; --warm-soft:#FFFFFF; --sun:#000000; --sun-ink:#FFFFFF;
   --sun-soft:#FFFFFF; --mint-soft:#FFFFFF; --tape:#000000; --tape-ink:#FFFFFF;
-  --ok:#00501F; --warn:#5C3700; --err:#8F0000; --focus:#0033CC; --shadow:none;
+  --ok:#00501F; --warn:#5C3700; --err:#8F0000; --focus:#0033CC; --shadow:none; --glow:none; --grad:#00338A; --btn:#00338A; --btn-ink:#FFFFFF; --chip:#FFFFFF; --band:#FFFFFF; --band2:#FFFFFF;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--ground);margin:0}
-#app{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:1rem;line-height:1.6;padding-inline:16px;padding-block:0 3rem;min-height:100vh}
+#app{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:1.0625rem;overflow-x:clip;line-height:1.6;padding-inline:16px;padding-block:0 3rem;min-height:100vh}
 #app.rf{--display:Arial,sans-serif; --body:Arial,sans-serif}
 #app.ul a{text-decoration:underline!important;text-underline-offset:3px}
 #app.ul a,#app.ul button{outline:1px dashed currentColor;outline-offset:1px}
@@ -47,7 +55,7 @@ body{background:var(--ground);margin:0}
 #app.nm .label{transform:none}
 .wrap{max-width:54rem;margin-inline:auto}
 a{color:var(--accent)}
-h1,h2,h3{font-family:var(--display);font-weight:400;text-wrap:balance;margin:0;line-height:1.2}
+h1,h2,h3{font-family:var(--display);font-weight:800;text-wrap:balance;margin:0;line-height:1.2;letter-spacing:-.01em}
 p{margin:0}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .skip{position:absolute;inset-inline-start:16px;top:-100px;background:var(--accent);color:var(--accent-ink);padding:.75rem 1rem;border-radius:8px;z-index:10;font-weight:700}
@@ -62,7 +70,8 @@ p{margin:0}
 .brand svg{width:2rem;height:2rem;flex:none}.lg-box{fill:var(--sun)}.lg-line{stroke:var(--sun-ink);stroke-width:1.5;opacity:.35}.lg-house{fill:var(--accent)}.lg-door{fill:var(--surface)}
 .tools{display:flex;gap:.5rem;flex-wrap:wrap}
 button,.btn{font:inherit;font-size:1rem;cursor:pointer;border-radius:999px;min-height:2.75rem;padding:.55rem 1.1rem;border:2px solid var(--field);background:var(--surface);color:var(--ink);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;text-decoration:none}
-button.primary,.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.primary,.btn.primary{background:var(--btn);color:var(--btn-ink);border-color:transparent;box-shadow:var(--glow);font-weight:700}
+button.primary:hover,.btn.primary:hover{filter:brightness(1.08)}
 button.quiet{border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px}
 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 button[disabled]{opacity:.6;cursor:wait}
@@ -74,32 +83,82 @@ button[disabled]{opacity:.6;cursor:wait}
 .a11y fieldset{border:0;padding:0;margin:0 0 .75rem}
 .a11y legend{font-weight:700;margin-bottom:.4rem}
 
-/* hero */
-.hero{display:grid;grid-template-columns:1.25fr 1fr;gap:1.75rem;align-items:center;padding:1.5rem 1.4rem 2rem;margin-bottom:1rem;border-radius:24px;background:radial-gradient(circle at 92% 12%,var(--sun-soft) 0 7rem,transparent 7.1rem),radial-gradient(circle at 4% 96%,var(--warm-soft) 0 8rem,transparent 8.1rem),var(--accent-soft)}
-.hl{background:linear-gradient(transparent 62%,var(--sun) 62%);color:inherit;padding:0 .1em;border-radius:2px}
-#app.hc .hl{background:none;text-decoration:underline}
-.hero h1{font-size:clamp(2rem,6vw,3.1rem)}
-.hero .sub{font-size:1.15rem;color:var(--muted);max-width:38ch;margin-top:.9rem}
-.facts{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.1rem 0 0;padding:0;list-style:none}
-.facts li{font-size:.9rem;padding:.3rem .85rem;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-weight:500}
-.label{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.1rem;position:relative;box-shadow:0 10px 30px -18px rgba(0,40,35,.45);transform:rotate(1.5deg)}
-.label::before{content:"";position:absolute;top:-10px;inset-inline:30%;height:22px;background:var(--tape);opacity:.9;border-radius:2px}
+/* פס כחול (כותרת + פתיח), ברוחב מלא, עם גל בתחתית */
+.navy{--ink:#FFFFFF;--muted:#D5EDE1;--line:rgba(255,255,255,.24);--field:rgba(255,255,255,.6);--surface:transparent;--chip:rgba(255,255,255,.08);
+  --accent:#FFC23D;--accent-ink:#13261E;--accent-soft:rgba(255,255,255,.1);--focus:#FFC23D;color:var(--ink)}
+.navy select option{color:#13261E;background:#fff}
+.top.navy{margin-inline:calc(50% - 50vw);padding-inline:max(16px,calc(50vw - 27rem));background:var(--band)}
+.hero{margin-inline:calc(50% - 50vw);padding:2rem max(16px,calc(50vw - 27rem)) 5.5rem;position:relative;margin-bottom:1rem;
+  display:grid;grid-template-columns:1.2fr 1fr;gap:1.5rem;align-items:center;
+  background:radial-gradient(520px 320px at 12% 30%,rgba(120,224,170,.32),transparent 70%),radial-gradient(420px 300px at 95% 90%,rgba(255,194,61,.18),transparent 70%),linear-gradient(180deg,var(--band) 0%,var(--band2) 100%)}
+.hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(to left,rgba(5,18,13,.9) 0%,rgba(5,18,13,.7) 38%,rgba(5,18,13,.12) 72%,rgba(5,18,13,0) 100%),
+  linear-gradient(to top,rgba(5,18,13,.55),rgba(5,18,13,0) 30%),url("/city.webp") 30% 35%/cover no-repeat}
+[dir="ltr"] .hero::before{transform:scaleX(-1)}
+.hero>*{position:relative;z-index:1}
+#app.hc .hero::before{display:none}
+.hero::after{z-index:1;content:"";position:absolute;inset-inline:0;bottom:-1px;height:64px;background:var(--ground);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 64' preserveAspectRatio='none'%3E%3Cpath d='M0 64V34C160 6 320 0 480 14s320 44 480 40 320-40 480-40v50z'/%3E%3C/svg%3E") bottom/100% 100% no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 64' preserveAspectRatio='none'%3E%3Cpath d='M0 64V34C160 6 320 0 480 14s320 44 480 40 320-40 480-40v50z'/%3E%3C/svg%3E") bottom/100% 100% no-repeat}
+.kicker{display:inline-flex;align-items:center;gap:.5rem;font-size:.9rem;font-weight:700;color:var(--accent);border:1px solid var(--line);background:var(--accent-soft);border-radius:99px;padding:.25rem .85rem;margin-bottom:1rem}
+.kicker::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--sun);box-shadow:0 0 0 4px rgba(255,194,61,.3)}
+.hl{background:none;color:var(--sun);text-decoration:underline;text-decoration-color:rgba(255,194,61,.5);text-decoration-thickness:.12em;text-underline-offset:.18em}
+#app.hc .hl{color:inherit;text-decoration-color:currentColor}
+.hero h1{font-size:clamp(2.2rem,5.2vw,3.5rem);font-weight:800;line-height:1.08;letter-spacing:-.01em}
+.hero .sub{font-size:1.2rem;color:var(--muted);max-width:40ch;margin-top:1rem}
+.herocta{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.5rem;align-items:center}
+.go{font-size:1.15rem;padding:.85rem 1.7rem;min-height:3.4rem;box-shadow:0 10px 30px -10px rgba(255,194,61,.7)}
+.go::after{content:"";width:.55rem;height:.55rem;border-top:2.5px solid currentColor;border-right:2.5px solid currentColor;transform:rotate(45deg);margin-inline-start:.35rem}
+[dir="rtl"] .go::after{transform:rotate(-135deg)}
+.facts{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.3rem 0 0;padding:0;list-style:none}
+.facts li{font-size:.92rem;padding:.3rem .9rem;border-radius:99px;background:var(--chip);border:1px solid var(--line);font-weight:600}
+.facts li::before{content:"✓ ";color:var(--sun)}
+/* איור: מהבית הישן לבית החדש (תלת-ממד, נוטה עם העכבר) */
+.viz{position:relative;min-height:30rem;perspective:1100px}
+.viz .label{display:none}
+.scene3d{position:absolute;inset:0;transform:rotateX(var(--rx,6deg)) rotateY(var(--ry,-10deg));transition:transform .25s ease-out;transform-style:preserve-3d}
+
+.scene3d{display:grid;place-items:center}
+.fchip{position:absolute;display:flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.94);color:#13261E;font-weight:700;font-size:.92rem;padding:.5rem .8rem .5rem .6rem;border-radius:16px;box-shadow:0 14px 34px -14px rgba(0,30,20,.55);transform:translateZ(90px);white-space:nowrap}
+.fi{display:grid;place-items:center;width:1.9rem;height:1.9rem;border-radius:50%;flex:none}.i1{background:#FFC23D;color:#13261E}.i2{background:#2EA8E6;color:#fff}.i3{background:#E3F2EA;color:#12704E}
+.okc{display:grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:50%;background:#22C55E;color:#fff;font-size:.8rem}
+.f1{top:14%;inset-inline-end:0}.f2{top:47%;inset-inline-start:0}.f3{bottom:9%;inset-inline-end:4%}
+#app.hc .fchip{border:2px solid #000;box-shadow:none}
+.bob{animation:bob 4.5s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.bob.b2{animation-delay:-1.5s}.bob.b3{animation-delay:-3s}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -10px}}
+.label{--ink:#13261E;--muted:#4D5E56;--line:#E3DCCD;--surface:#FFFFFF;color:var(--ink);background:#fff;border-radius:22px;padding:1rem 1.2rem;position:absolute;inset-inline-start:0;bottom:-2.2rem;width:min(100%,16.5rem);
+  box-shadow:0 30px 60px -28px rgba(0,20,60,.6);transform:translateZ(60px);border:1px solid #D9E2EE}
+.label::before{content:"";position:absolute;top:-.45rem;inset-inline-start:1.2rem;width:2.6rem;height:.9rem;background:var(--sun);border-radius:4px;transform:rotate(-4deg)}
 .label dl{margin:0}
 .label .row{display:flex;justify-content:space-between;gap:.6rem;font-size:.9rem;padding-block:.4rem;border-bottom:1px dashed var(--line)}
 .label .row:last-child{border:0}
 .label dt{color:var(--muted)}
-.label dd{margin:0;font-weight:600;text-align:end}
+.label dd{margin:0;font-weight:700;text-align:end}
+#app.hc .navy{--ink:#000;--muted:#000;--line:#000;--field:#000;--surface:#fff;--chip:#fff;--accent:#00338A;--accent-soft:#fff;--accent-ink:#fff;--focus:#0033CC}
+#app.hc .top.navy,#app.hc .hero{background:#fff}#app.hc .hero::after,#app.hc .scene3d{display:none}#app.hc .label{position:static;transform:none;border:2px solid #000;box-shadow:none}
+#app.nm .label,#app.nm .scene3d{transform:none}
+/* כפתור "מתחילים" צף בטלפון */
+.stickycta{display:none}
+@media (max-width:640px){.stickycta{display:flex;position:fixed;inset-inline:0;bottom:0;z-index:20;padding:.7rem 16px calc(.7rem + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--ground) 35%)}.stickycta .go{width:100%}.stickycta[hidden]{display:none}}
+/* שלבים בעיגולים */
+.dots{list-style:none;display:flex;justify-content:space-between;margin:.7rem 0 0;padding:0;position:relative}
+.dots::before{content:"";position:absolute;inset-inline:1rem;top:50%;height:3px;margin-top:-1.5px;background:var(--line);border-radius:3px}
+.dots li{position:relative;width:2.1rem;height:2.1rem;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.95rem;background:var(--surface);border:2px solid var(--line);color:var(--muted)}
+.dots li.done{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.dots li.cur{background:var(--sun);border-color:var(--sun);color:var(--sun-ink);box-shadow:0 0 0 5px rgba(255,194,61,.3);transform:scale(1.1)}
+.progress .bar{display:none}
 
 /* progress */
 .progress{margin-block:.25rem 1rem}
 .progress p{font-weight:600}
 .progress .muted{font-weight:400}
 .bar{height:.7rem;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:.5rem;border:1px solid var(--line)}
-.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun),var(--accent));transition:width .3s}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--grad);transition:width .3s}
 .muted{color:var(--muted)}
 
 /* form */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.5rem;box-shadow:var(--shadow)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:1.5rem;box-shadow:var(--shadow)}
 .panel h2{font-size:1.65rem}
 .lead{margin:.4rem 0 1.2rem;color:var(--muted);max-width:60ch}
 .grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1rem}
@@ -113,11 +172,13 @@ button[disabled]{opacity:.6;cursor:wait}
 .hint{color:var(--muted);font-size:.9rem}
 .ferr{color:var(--err);font-size:.95rem;font-weight:600;display:flex;gap:.3rem}
 .ferr::before{content:"!";display:inline-grid;place-items:center;width:1.2rem;height:1.2rem;border-radius:50%;background:var(--err);color:var(--surface);font-size:.8rem;flex:none;margin-top:.2rem}
-input,select{font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:2px solid var(--field);border-radius:12px;padding:.6rem .75rem;width:100%;min-width:0;min-height:2.9rem}
+#steps .panel{box-shadow:var(--glow)}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+input,select{font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:2px solid var(--field);border-radius:14px;padding:.6rem .75rem;width:100%;min-width:0;min-height:2.9rem}
 input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--err);border-width:3px}
 .choices{display:flex;gap:.5rem;flex-wrap:wrap;border:0;padding:0;margin:0}
 .choices legend{font-weight:600;margin-bottom:.4rem;padding:0}
-.choice{display:flex;align-items:center;gap:.55rem;border:2px solid var(--line);border-radius:14px;padding:.55rem .9rem;cursor:pointer;background:var(--surface);min-height:2.9rem}
+.choice{display:flex;align-items:center;gap:.55rem;border:2px solid var(--line);border-radius:16px;padding:.55rem .9rem;cursor:pointer;background:var(--surface);min-height:2.9rem}
 .choice input{width:1.3rem;height:1.3rem;min-height:0;margin:0;accent-color:var(--accent);flex:none}
 .choice:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
 .errsum{border:3px solid var(--err);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;background:var(--surface)}
@@ -132,9 +193,9 @@ input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--err);b
 .refbox{margin-top:1rem;padding:.8rem 1rem;border:2px dashed var(--accent);border-radius:10px}
 .refbox strong{font-size:1.2rem;letter-spacing:.05em}
 .sect{margin-top:1.75rem}
-.sect h2,.sect h3{font-size:1.3rem;font-family:var(--display);font-weight:400;display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
+.sect h2,.sect h3{font-size:1.3rem;font-family:var(--display);font-weight:700;display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
 .sect h2 .muted,.sect h3 .muted{font-family:var(--body);font-size:.9rem}
-.items{list-style:none;margin:.6rem 0 0;padding:0;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);overflow:hidden;background:var(--surface)}
+.items{list-style:none;margin:.6rem 0 0;padding:0;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);overflow:hidden;background:var(--surface)}
 .item{padding:1rem;border-top:1px solid var(--line)}
 .item:first-child{border-top:0}
 .item.key{background:var(--accent-soft)}
@@ -154,12 +215,14 @@ input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--err);b
 .dossier{margin-top:1.75rem}
 .dossier h2{font-size:1.3rem}
 .dossier pre{white-space:pre-wrap;font-family:var(--body);background:var(--sunk);padding:1rem;border-radius:8px;margin:.75rem 0;border:1px solid var(--line)}
-.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline:0;margin-inline:auto;width:max-content;max-width:90vw;background:var(--ink);color:var(--ground);padding:.7rem 1rem;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;font-weight:600}
-.toast.show{opacity:1}
-.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.1rem;margin:2rem 0 .5rem;padding:0;list-style:none}
-.how li{border-top:3px solid var(--ink);padding-top:.6rem}
-.how h2{font-size:1.15rem}
-.how p{margin-top:.25rem;color:var(--muted)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline:0;margin-inline:auto;width:max-content;max-width:90vw;background:var(--ink);color:var(--ground);padding:.7rem 1rem;border-radius:8px;visibility:hidden;pointer-events:none;font-weight:600}
+.toast.show{visibility:visible}
+.toast{z-index:30}
+ul.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:2.2rem 0 .5rem;padding:0;list-style:none;counter-reset:how}
+ul.how li{counter-increment:how;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.1rem 1.2rem 1.2rem;box-shadow:var(--shadow)}
+ul.how li::before{content:counter(how);display:grid;place-items:center;width:2.2rem;height:2.2rem;border-radius:50%;background:var(--sun);color:var(--sun-ink);font-weight:800;margin-bottom:.6rem}
+ul.how h2{font-size:1.15rem}
+ul.how p{margin-top:.25rem;color:var(--muted)}
 footer{margin-top:2rem;border-top:1px solid var(--line);padding-top:1rem;display:flex;gap:.5rem 1.2rem;flex-wrap:wrap;align-items:center}
 footer p{color:var(--muted);font-size:.9rem;flex-basis:100%}
 dialog{border:2px solid var(--ink);border-radius:12px;padding:0;max-width:40rem;width:calc(100% - 32px);background:var(--surface);color:var(--ink);font-family:var(--body)}
@@ -180,11 +243,11 @@ dialog .dfoot{padding:.8rem 1.3rem;border-top:1px solid var(--line);display:flex
 .amount{font-weight:700;font-size:.9rem;padding:.2rem .7rem;border-radius:99px;background:var(--tape);color:var(--tape-ink);white-space:nowrap}
 .bestb{display:table;font-size:.8rem;font-weight:700;padding:.1rem .5rem;border-radius:6px;border:2px solid var(--accent);color:var(--accent);margin-top:.3rem;white-space:nowrap}
 .sure{font-size:.8rem;color:var(--muted);font-weight:600}
-.how{margin-top:.5rem;padding-inline-start:2.2rem;max-width:62ch}
-.how strong{display:block;line-height:1.3}
+p.how{margin-top:.5rem;padding-inline-start:2.2rem;max-width:62ch}
+p.how strong{display:block;line-height:1.3}
 .docs{margin:.4rem 0 0;padding-inline-start:3.4rem;font-size:.95rem}
 .listhead{font-size:1.5rem;margin-top:2rem}
-@media (max-width:640px){.how{padding-inline-start:0}.docs{padding-inline-start:1.2rem}}
+@media (max-width:640px){p.how{padding-inline-start:0}.docs{padding-inline-start:1.2rem}}
 /* הובלה ודפי מובילים */
 .moving{margin-top:1.5rem;background:var(--accent-soft)}
 .moving h2{font-size:1.4rem;margin-bottom:.4rem}
@@ -192,12 +255,152 @@ dialog .dfoot{padding:.8rem 1.3rem;border-top:1px solid var(--line);display:flex
 .mv-links{display:inline-flex;gap:1rem;flex-wrap:wrap}
 .pg-h1{font-size:clamp(1.7rem,5vw,2.3rem);margin-bottom:.4rem}
 .mv-list{margin-top:1rem}
+main.pg{padding-top:1.6rem}
 .mv-name{font-size:1.25rem}
 .mv-revs{margin:.3rem 0 0;padding-inline-start:1.1rem;font-size:.95rem}
 .mv-dl{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem;margin:1rem 0}
 .mv-dl dt{color:var(--muted)}.mv-dl dd{margin:0;font-weight:500}
 .mv-status{margin-top:1rem}.mv-status h2{font-size:1.3rem}
 .opts{display:flex;flex-wrap:wrap;gap:.5rem}
+/* סרטון הסבר */
+.exopen{gap:.6rem;min-height:3.2rem;background:var(--chip)}
+.playic{width:0;height:0;border-block:.45rem solid transparent;border-left:.75rem solid currentColor;display:inline-block}
+.explainer{margin:0 0 1.2rem}
+.exhead{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem}
+.exhead h2{font-size:1.4rem}
+.stage{position:relative;aspect-ratio:16/9;font-size:clamp(12px,2.1vw,22px);border-radius:22px;overflow:hidden;background:radial-gradient(circle at 85% 15%,var(--sun-soft) 0 22%,transparent 22.5%),radial-gradient(circle at 8% 90%,var(--warm-soft) 0 25%,transparent 25.5%),var(--accent-soft);border:1px solid var(--line);color:var(--ink)}
+.scene{position:absolute;inset:0 0 3.6em;display:flex;align-items:center;justify-content:center;gap:1.5em;flex-wrap:wrap;padding:1em;opacity:0;visibility:hidden;transition:opacity .45s}
+.scene.on{opacity:1;visibility:visible}
+.cap{position:absolute;inset-inline:0;bottom:.9em;margin:0 auto;width:max-content;max-width:92%;text-align:center;background:var(--ink);color:var(--ground);font-weight:600;font-size:1em;padding:.35em .9em;border-radius:10px;line-height:1.4}
+.cap:empty{display:none}
+.exbar{position:absolute;inset-inline:0;bottom:0;height:.3em;background:rgba(0,0,0,.08)}.exbar i{display:block;height:100%;width:0;background:var(--accent)}
+.exctl{display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-start;margin-top:.8rem}
+.transcript{flex-basis:100%}.transcript summary{cursor:pointer;font-weight:600;color:var(--accent);min-height:2.75rem;display:flex;align-items:center}
+.transcript ol{margin:.3rem 0 0;padding-inline-start:1.3rem}
+/* סצנות */
+.sc1 .house{width:5.5em;height:4.6em;background:var(--accent);border-radius:0 0 10px 10px;position:relative;display:grid;place-items:center}
+.sc1 .roof{position:absolute;top:-2.4em;inset-inline:-.6em;height:2.5em;background:var(--accent);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sc1 .q{color:var(--accent-ink);font:700 2.4em/1 var(--display)}
+.orbit{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,auto);gap:.45em}
+.orbit li,.coins span{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:.3em .75em;font-weight:600;font-size:.9em;box-shadow:0 6px 16px -10px rgba(0,0,0,.35);white-space:nowrap}
+.scene.on .orbit li{animation:pop .45s both}
+.scene.on .orbit li:nth-child(2){animation-delay:.25s}.scene.on .orbit li:nth-child(3){animation-delay:.5s}.scene.on .orbit li:nth-child(4){animation-delay:.75s}
+.scene.on .orbit li:nth-child(5){animation-delay:1s}.scene.on .orbit li:nth-child(6){animation-delay:1.25s}.scene.on .orbit li:nth-child(7){animation-delay:1.5s}.scene.on .orbit li:nth-child(8){animation-delay:1.75s}
+.phone{width:9.5em;background:var(--surface);border:3px solid var(--ink);border-radius:18px;padding:.8em .7em;display:flex;flex-direction:column;gap:.45em}
+.phone b{font-size:.85em}.phone i{display:block;height:1.05em;border:2px solid var(--field);border-radius:6px;position:relative;overflow:hidden}
+.phone i::after{content:"";position:absolute;inset-block:.2em;inset-inline-start:.25em;width:0;background:var(--accent);border-radius:3px}
+.scene.on .phone i::after{animation:type .8s forwards}
+.scene.on .phone i:nth-of-type(2)::after{animation-delay:.8s}.scene.on .phone i:nth-of-type(3)::after{animation-delay:1.6s}.scene.on .phone i:nth-of-type(4)::after{animation-delay:2.4s}
+.phone .go{height:1.3em;border-radius:99px;background:var(--accent);opacity:.35}.scene.on .phone .go{animation:glow .6s 3.2s forwards}
+.badge{background:var(--sun);color:var(--sun-ink);font:700 1.3em/1 var(--display);padding:.6em .9em;border-radius:14px;transform:rotate(-4deg)}
+.ticks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.45em;min-width:14em}
+.ticks li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.45em .8em;display:flex;gap:.6em;align-items:center;font-weight:600;font-size:.95em}
+.ticks li::before{content:"";width:1.1em;height:1.1em;border:2px solid var(--field);border-radius:5px;flex:none}
+.scene.on .ticks li::before{animation:tick .3s forwards}
+.scene.on .ticks li:nth-child(1)::before{animation-delay:.6s}.scene.on .ticks li:nth-child(2)::before{animation-delay:1.3s}.scene.on .ticks li:nth-child(3)::before{animation-delay:2s}.scene.on .ticks li:nth-child(4)::before{animation-delay:2.7s}
+.coins{display:flex;flex-direction:column;gap:.5em}.coins span{background:var(--warm-soft)}
+.scene.on .coins span{animation:pop .45s both}.scene.on .coins span:nth-child(2){animation-delay:.5s}.scene.on .coins span:nth-child(3){animation-delay:1s}
+.shekel{width:4.2em;height:4.2em;border-radius:50%;background:var(--sun);color:var(--sun-ink);display:grid;place-items:center;font:700 2.2em/1 var(--body);box-shadow:0 10px 24px -12px rgba(0,0,0,.5)}
+.scene.on .shekel{animation:bounce 1.2s .4s 2 both}
+.road{width:min(60%,20em);border-bottom:4px dashed var(--field);padding-bottom:.3em;overflow:hidden}
+.truck{position:relative;width:8em;height:4.2em}
+.scene.on .truck{animation:drive 2.4s ease-out both}
+.truck .box{position:absolute;inset-inline-start:0;top:0;width:5.2em;height:3.3em;background:var(--accent);border-radius:6px}
+.truck .cab{position:absolute;inset-inline-end:0;bottom:.7em;width:2.6em;height:2.2em;background:var(--sun);border-radius:8px 8px 4px 4px}
+.truck .w1,.truck .w2{position:absolute;bottom:0;width:1.3em;height:1.3em;border-radius:50%;background:var(--ink)}.truck .w1{inset-inline-start:.6em}.truck .w2{inset-inline-end:1em}
+.boxes{display:flex;flex-direction:column;align-items:center}
+.boxes span{width:3.4em;height:2.4em;background:#C98B4B;border:2px solid #8A5A2B;border-radius:4px;margin-top:-2px;position:relative}
+.boxes span::after{content:"";position:absolute;inset-inline:45%;top:0;bottom:0;background:#E6C07A}
+.scene.on .boxes span{animation:drop .5s both}.scene.on .boxes span:nth-child(2){animation-delay:.35s}.scene.on .boxes span:nth-child(1){animation-delay:.7s}
+.bell{font-size:3em}.scene.on .bell{animation:ring .5s 3 both}
+.cal{background:var(--surface);border:2px solid var(--ink);border-radius:12px;overflow:hidden;min-width:8em;text-align:center;display:flex;flex-direction:column}
+.cal b{background:var(--warm);color:var(--surface);padding:.2em .5em}.cal span{padding:.5em .6em;font-weight:600}
+.agent{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:.45em .9em;display:flex;gap:.5em;align-items:center;font-weight:600}
+.agent .dot{width:.7em;height:.7em;border-radius:50%;background:var(--ok)}.scene.on .agent{animation:pop .45s 1.4s both}
+.endlogo{display:flex;align-items:center;gap:.3em;font:400 3.2em/1 var(--display)}.endlogo svg{width:1.15em;height:1.15em}
+.scene.sc7{flex-direction:column;gap:.6em}.endline{font-size:1.3em;font-weight:600}
+.scene.on .endlogo{animation:pop .6s both}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes type{to{width:calc(100% - .5em)}}
+@keyframes glow{to{opacity:1}}
+@keyframes tick{to{background:var(--ok);border-color:var(--ok);box-shadow:inset 0 0 0 3px var(--surface)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-1em)}}
+@keyframes drive{from{transform:translateX(calc(-130% * var(--dir,1)))}to{transform:none}}
+@keyframes drop{from{opacity:0;transform:translateY(-2.5em)}to{opacity:1;transform:none}}
+@keyframes ring{0%,100%{transform:rotate(0)}25%{transform:rotate(14deg)}75%{transform:rotate(-14deg)}}
+[dir="rtl"] .truck{--dir:-1}
+#app.hc .stage{background:#fff}#app.hc .boxes span{background:#fff;border-color:#000}
+@media (max-width:640px){.stage{aspect-ratio:4/5;font-size:3.6vw}.orbit{grid-template-columns:repeat(2,auto)}.scene{flex-direction:column;gap:1rem}}
+/* מצב הקלטה (#video): רק הבמה, על כל המסך */
+.stage.paused *{animation-play-state:paused!important}
+html.videomode body{background:var(--ground)}
+html.videomode #app>.wrap>*:not(main),html.videomode main>*:not(#explainer),html.videomode .exhead,html.videomode .exctl,html.videomode .skip{display:none!important}
+html.videomode #app{padding:0}html.videomode .wrap{max-width:none}
+html.videomode .explainer{margin:0}html.videomode .stage{aspect-ratio:auto;height:100vh;border-radius:0;border:0;font-size:5.2vw}
+html.videomode .scene{flex-direction:column;gap:2em;inset:0 0 6em}html.videomode .cap{bottom:2em;font-size:1.15em;max-width:88%}
+html.videomode .orbit{grid-template-columns:repeat(2,auto);gap:.8rem}
+
+/* חלקי דף הנחיתה: מה אנחנו עושים, מספרים, מה שונה, מי אנחנו, שאלות, קריאה לפעולה */
+.sec{margin-top:3.5rem}
+.sec>h2,.band h2{font-size:clamp(1.7rem,4.2vw,2.3rem);text-align:center}
+.sec-lead{text-align:center;color:var(--muted);max-width:52ch;margin:.5rem auto 0;font-size:1.1rem}
+.ico{width:1.5rem;height:1.5rem;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.cards{list-style:none;margin:1.6rem 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:1.3rem 1.3rem 1.4rem;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:var(--glow)}
+.card .ico,.why .ico{width:2.9rem;height:2.9rem;padding:.65rem;border-radius:16px;background:var(--accent-soft);color:var(--accent);margin-bottom:.8rem}
+.card h3,.why h3{font-size:1.2rem;margin-bottom:.35rem}
+.card p,.why p{color:var(--muted)}
+.band{margin-inline:calc(50% - 50vw);padding:2.6rem max(16px,calc(50vw - 27rem));margin-top:3.5rem;background:linear-gradient(135deg,var(--band),var(--band2));color:#fff}
+.stats ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;text-align:center}
+.stats b{display:block;font-family:var(--display);font-size:clamp(2.4rem,6vw,3.4rem);line-height:1;color:var(--sun);font-weight:800}
+.stats span{display:block;margin-top:.4rem;color:#D5EDE1;font-weight:600}
+.why{list-style:none;margin:1.6rem 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.why li{display:flex;gap:1rem;align-items:flex-start;background:var(--mint-soft);border-radius:24px;padding:1.2rem 1.3rem}
+.why .ico{background:var(--surface);flex:none;margin:0}
+.about{display:grid;grid-template-columns:1.4fr 1fr;gap:2rem;align-items:center}
+.about h2{font-size:clamp(1.7rem,4.2vw,2.3rem);text-align:start;margin-bottom:.8rem}
+.about p{color:var(--muted);font-size:1.08rem;margin-top:.7rem}
+.quote{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:28px;padding:1.6rem;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.quote::before{content:"";position:absolute;inset-inline-end:-2rem;top:-2rem;width:8rem;height:8rem;border-radius:50%;background:var(--sun-soft)}
+.quote b{position:relative;display:block;font-family:var(--display);font-size:5rem;line-height:1;color:var(--accent);font-weight:800}
+.quote figcaption{position:relative;margin-top:.5rem;font-weight:600;font-size:1.1rem}
+.faq{max-width:46rem;margin:1.6rem auto 0;display:flex;flex-direction:column;gap:.6rem}
+.faq details{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:0 1.2rem}
+.faq summary{cursor:pointer;list-style:none;font-weight:700;font-size:1.08rem;min-height:3.4rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";flex:none;display:grid;place-items:center;width:1.9rem;height:1.9rem;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:1.3rem;font-weight:700}
+.faq details[open] summary::after{content:"−"}
+.faq details p{color:var(--muted);padding-bottom:1.1rem}
+.ctaband{text-align:center}
+.ctaband p{color:#D5EDE1;font-size:1.15rem;margin:.6rem 0 1.4rem}
+footer .contact{flex-basis:100%;font-weight:600;color:var(--ink)}
+footer .contact a{margin-inline-end:1rem}
+footer .copy{font-size:.85rem}
+#app.hc .band{background:#fff;color:#000}#app.hc .stats span,#app.hc .ctaband p{color:#000}#app.hc .stats b{color:#00338A}
+@media (max-width:860px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.stats ul{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:1.6rem}}
+@media (max-width:640px){.cards,.why,.about{grid-template-columns:1fr}.sec{margin-top:2.6rem}}
+/* שמירה והשלמה אחר כך */
+.welcome{background:var(--sun-soft);border:1px solid var(--line);border-radius:14px;padding:.8rem 1rem;margin-bottom:1rem}
+.autosave{font-size:.9rem;margin-top:.8rem}
+.later{margin-top:1.5rem;border:2px dashed var(--warn)}
+.later h2{font-size:1.4rem;margin-bottom:.4rem}
+.later .grid{margin-top:1rem}
+.later .acts{padding-inline-start:0}
+.mt1{margin-top:1rem}
+/* תיאום שיחה */
+.cbgrid{display:flex;flex-direction:column;gap:1rem;margin-top:1rem}
+.cbfoot{gap:.6rem;flex-wrap:wrap}
+.cbasked{font-size:.95rem;font-weight:600;color:var(--ok);align-self:center}
+/* קרטונים וחומרי אריזה */
+.supplies{margin-top:1.5rem;background:var(--mint-soft)}
+.supplies h2{font-size:1.4rem;margin-bottom:.4rem}
+.supplies h3{font-size:1.15rem;margin:1.1rem 0 .4rem}
+.kit{list-style:none;margin:.6rem 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:.4rem .9rem}
+.kit li{display:flex;justify-content:space-between;gap:.6rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.45rem .75rem}
+.kit b{font-variant-numeric:tabular-nums}
+.tips{margin:.3rem 0 0;padding-inline-start:1.3rem}.tips li{margin:.25rem 0}
+@media (max-width:640px){#grp-kit .w2{grid-column:span 3}}
 footer a{color:var(--accent)}
 
 /* שפות */
@@ -206,7 +409,7 @@ footer a{color:var(--accent)}
 .globe{width:1.2rem;height:1.2rem;fill:none;stroke:currentColor;stroke-width:1.6;flex:none}
 .henote{background:var(--sun-soft);border:1px solid var(--line);border-radius:10px;padding:.6rem .9rem;margin:.8rem 0;font-size:.95rem}
 [dir="rtl"] input[dir="ltr"]{text-align:right}
-#app:lang(ru),#app:lang(ar){--display:"Rubik","Segoe UI",Arial,sans-serif}
+#app:lang(ru),#app:lang(ar){--display:"Rubik","Segoe UI",Arial,sans-serif;--body:"Rubik","Segoe UI",Arial,sans-serif}
 #app:lang(ru) h1,#app:lang(ru) h2,#app:lang(ru) h3,#app:lang(ru) .brand,#app:lang(ar) h1,#app:lang(ar) h2,#app:lang(ar) h3,#app:lang(ar) .brand{font-weight:700}
 #app:lang(ar){line-height:1.75}
 /* שותפים */
@@ -218,8 +421,10 @@ footer a{color:var(--accent)}
 @media (max-width:640px){
   .hero{grid-template-columns:1fr}
   .label{transform:none}
+  .viz{min-height:19rem;margin-top:.5rem}.viz .label{display:none}.hero{padding-bottom:4.5rem}
+  .hero::before{background:linear-gradient(to bottom,rgba(5,18,13,.88) 0%,rgba(5,18,13,.78) 55%,rgba(5,18,13,.2) 80%,rgba(5,18,13,.45) 100%),url("/city-m.webp") 20% 100%/cover no-repeat}.fchip{font-size:.82rem}.f1{inset-inline-end:2%}.f2{inset-inline-start:2%}
   .w4,.w3,.w2{grid-column:span 6}
-  .how{grid-template-columns:1fr}
+  ul.how{grid-template-columns:1fr}
   .sum{grid-template-columns:1fr}
   .item .desc,.acts,.need{padding-inline-start:0}
 }
@@ -229,11 +434,12 @@ footer a{color:var(--accent)}
 <div id="app" lang="he" dir="rtl">
 <a class="skip" href="#main" data-i18n="skip">דילוג לתוכן הראשי</a>
 <div class="wrap">
-  <header class="top">
+  <header class="top navy">
     <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="15" width="22" height="18" rx="3" class="lg-box"/><path d="M3 21h22" class="lg-line"/><path d="M19 17l9-8 9 8v14a2 2 0 0 1-2 2H21a2 2 0 0 1-2-2z" class="lg-house"/><rect x="25.5" y="23" width="5" height="10" rx="1" class="lg-door"/></svg><span>עברנו</span><span class="tld" dir="ltr" aria-hidden="true">.com</span></div>
     <div class="tools">
       <label class="langsel" for="langSel"><svg viewBox="0 0 24 24" aria-hidden="true" class="globe"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg><span class="sr" data-i18n="lang.label">שפה</span>
         <select id="langSel"><option value="he" lang="he">עברית</option><option value="en" lang="en">English</option><option value="ru" lang="ru">Русский</option><option value="ar" lang="ar">العربية</option></select></label>
+      <button type="button" id="themeBtn" class="themebtn"></button>
       <button type="button" id="a11yBtn" aria-expanded="false" aria-controls="a11yPanel" data-i18n="a11y.btn">נגישות</button>
       <button type="button" id="resetBtn" class="quiet">מחיקת הפרטים והתחלה מחדש</button>
     </div>
@@ -263,11 +469,22 @@ footer a{color:var(--accent)}
   </section>
 
   <main id="main" tabindex="-1">
-    <section class="hero" id="hero" aria-labelledby="heroTitle">
+    <section class="hero navy" id="hero" aria-labelledby="heroTitle">
       <div>
+        <p class="kicker" data-i18n="hero.kicker">חדש: הכול במקום אחד</p>
         <h1 id="heroTitle" data-i18n-hl="hero.title">עוברים דירה? ממלאים פרטים פעם אחת, ומקבלים <mark class="hl">כל הנחה</mark> שמגיעה לכם.</h1>
         <p class="sub" data-i18n="hero.sub">נגיד לכם את מי צריך לעדכן ומתי. נמצא בשבילכם הנחות בארנונה, בחשמל ובמים, ונכין את הבקשות.</p>
         <ul class="facts" id="facts" data-i18n-aria="facts.label" aria-label="בקצרה"></ul>
+        <div class="herocta">
+          <button type="button" class="primary go" id="heroGo" data-i18n="hero.go">מתחילים, זה 5 דקות</button>
+          <button type="button" class="exopen" id="exOpen" aria-controls="explainer" aria-expanded="false"><span class="playic" aria-hidden="true"></span><span data-i18n="ex.open">איך זה עובד? סרטון של 30 שניות</span></button>
+        </div>
+      </div>
+      <div class="viz" id="viz">
+      <div class="scene3d" aria-hidden="true">
+        <div class="fchip f1 bob"><span class="fi i1"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg></span><span data-i18n="art.c1">חשמל: עודכן</span><span class="okc">✓</span></div>
+        <div class="fchip f2 bob b2"><span class="fi i2"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3c-4 5.5-6 8.6-6 11a6 6 0 0 0 12 0c0-2.4-2-5.5-6-11z" fill="currentColor"/></svg></span><span data-i18n="art.c2">מים: עודכן</span><span class="okc">✓</span></div>
+        <div class="fchip f3 bob b3"><span class="fi i3"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 12V4h8l10 10-8 8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="7.5" cy="8.5" r="1.6" fill="currentColor"/></svg></span><span data-i18n="art.c3">נמצאה הנחה בארנונה</span></div>
       </div>
       <div class="label" data-i18n-aria="label.aria" aria-label="תקציר המעבר שלכם" role="group">
         <dl>
@@ -278,14 +495,58 @@ footer a{color:var(--accent)}
           <div class="row"><dt data-i18n="label.status">מה כבר עודכן</dt><dd id="lblStatus"></dd></div>
         </dl>
       </div>
+      </div>
+    </section>
+
+    <section class="explainer" id="explainer" aria-labelledby="exTitle" hidden>
+      <div class="exhead"><h2 id="exTitle" data-i18n="ex.title">איך עברנו עובד</h2><button type="button" class="quiet" id="exClose" data-i18n="ex.close">סגירת הסרטון</button></div>
+      <div class="stage" id="stage">
+        <div class="scene sc1" data-sc="1" aria-hidden="true">
+          <div class="house"><span class="roof"></span><span class="q">?</span></div>
+          <ul class="orbit"><li data-i18n="ex.b1"></li><li data-i18n="ex.b2"></li><li data-i18n="ex.b3"></li><li data-i18n="ex.b4"></li><li data-i18n="ex.b5"></li><li data-i18n="ex.b6"></li><li data-i18n="ex.b7"></li><li data-i18n="ex.b8"></li></ul>
+        </div>
+        <div class="scene sc2" data-sc="2" aria-hidden="true">
+          <div class="phone"><b data-i18n="ex.form"></b><i></i><i></i><i></i><i></i><span class="go"></span></div>
+          <span class="badge" data-i18n="ex.min"></span>
+        </div>
+        <div class="scene sc3" data-sc="3" aria-hidden="true">
+          <ul class="ticks"><li data-i18n="ex.l1"></li><li data-i18n="ex.l2"></li><li data-i18n="ex.l3"></li><li data-i18n="ex.l4"></li></ul>
+        </div>
+        <div class="scene sc4" data-sc="4" aria-hidden="true">
+          <div class="coins"><span data-i18n="ex.d1"></span><span data-i18n="ex.d2"></span><span data-i18n="ex.d3"></span></div>
+          <div class="shekel">₪</div>
+        </div>
+        <div class="scene sc5" data-sc="5" aria-hidden="true">
+          <div class="road"><div class="truck"><span class="cab"></span><span class="box"></span><span class="w1"></span><span class="w2"></span></div></div>
+          <div class="boxes"><span></span><span></span><span></span></div>
+        </div>
+        <div class="scene sc6" data-sc="6" aria-hidden="true">
+          <div class="bell">🔔</div>
+          <div class="cal"><b data-i18n="ex.cal"></b><span data-i18n="ex.calT"></span></div>
+          <div class="agent"><span class="dot"></span><span data-i18n="ex.agent"></span></div>
+        </div>
+        <div class="scene sc7" data-sc="7" aria-hidden="true">
+          <div class="endlogo"><svg viewBox="0 0 40 40"><rect x="3" y="15" width="22" height="18" rx="3" class="lg-box"/><path d="M3 21h22" class="lg-line"/><path d="M19 17l9-8 9 8v14a2 2 0 0 1-2 2H21a2 2 0 0 1-2-2z" class="lg-house"/><rect x="25.5" y="23" width="5" height="10" rx="1" class="lg-door"/></svg><span>עברנו</span></div>
+          <p class="endline" data-i18n="ex.free"></p>
+        </div>
+        <p class="cap" id="exCap" aria-live="polite"></p>
+        <div class="exbar" aria-hidden="true"><i id="exBar"></i></div>
+      </div>
+      <div class="exctl">
+        <button type="button" class="primary" id="exPlay"></button>
+        <button type="button" id="exStart" data-i18n="ex.cta">מתחילים למלא</button>
+        <details class="transcript"><summary data-i18n="ex.transcript">מה אומרים בסרטון (טקסט מלא)</summary><ol id="exText"></ol></details>
+      </div>
     </section>
 
     <div class="progress" id="progress">
       <p id="stepText" aria-live="polite"></p>
       <div class="bar" aria-hidden="true"><i id="stepBar"></i></div>
+      <ol class="dots" id="dots" aria-hidden="true"></ol>
     </div>
 
     <form id="f" novalidate>
+      <div class="welcome" id="welcome" role="status" hidden></div>
       <div class="errsum" id="errsum" role="alert" tabindex="-1" hidden></div>
       <div id="steps"></div>
       <input type="text" id="website" name="website" class="sr" tabindex="-1" autocomplete="off" aria-hidden="true">
@@ -293,6 +554,7 @@ footer a{color:var(--accent)}
         <button type="button" id="back" data-i18n="nav.back">חזרה לשלב הקודם</button>
         <button type="submit" class="primary" id="next" data-i18n="nav.next">המשך לשלב הבא</button>
       </div>
+      <p class="muted autosave" id="autosave" data-i18n="auto.note"></p>
     </form>
 
     <section id="results" aria-labelledby="rTitle" hidden>
@@ -309,7 +571,9 @@ footer a{color:var(--accent)}
         <p class="lead" data-i18n="res.markHint">סמנו כל גוף שכבר עדכנתם. הסימון נשמר רק אצלכם.</p>
         <button type="button" id="editBtn" data-i18n="res.edit">שינוי הפרטים</button>
       </div>
+      <section id="later" class="panel later" aria-labelledby="laterTitle" hidden></section>
       <section id="moving" class="panel moving" aria-labelledby="mvTitle" hidden></section>
+      <section id="supplies" class="panel supplies" aria-labelledby="supTitle" hidden></section>
       <section id="benefits" class="benefits" aria-labelledby="bTitle"></section>
       <h2 class="listhead" id="updTitle" data-i18n="res.updTitle">את מי לעדכן</h2>
       <div id="groups"></div>
@@ -328,13 +592,74 @@ footer a{color:var(--accent)}
       <li><h2 data-i18n="how.2.t">אחר כך חשמל, מים וארנונה</h2><p data-i18n="how.2.d"></p></li>
       <li><h2 data-i18n="how.3.t">ובדרך, כל ההנחות</h2><p data-i18n="how.3.d"></p></li>
     </ul>
+    <div id="more">
+      <section class="sec" aria-labelledby="svcT">
+        <h2 id="svcT" data-i18n="svc.T">מה אנחנו עושים בשבילכם</h2>
+        <p class="sec-lead" data-i18n="svc.L"></p>
+        <ul class="cards">
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><h3 data-i18n="svc.1t"></h3><p data-i18n="svc.1d"></p></li>
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.4"/></svg><h3 data-i18n="svc.2t"></h3><p data-i18n="svc.2d"></p></li>
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><h3 data-i18n="svc.3t"></h3><p data-i18n="svc.3d"></p></li>
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h11v9H2zM13 10h4l3 3v3h-7z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg><h3 data-i18n="svc.4t"></h3><p data-i18n="svc.4d"></p></li>
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg><h3 data-i18n="svc.5t"></h3><p data-i18n="svc.5d"></p></li>
+          <li class="card"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg><h3 data-i18n="svc.6t"></h3><p data-i18n="svc.6d"></p></li>
+        </ul>
+      </section>
+      <section class="band stats" aria-label="" data-i18n-aria="stat.aria">
+        <ul>
+          <li><b>22</b><span data-i18n="stat.1"></span></li>
+          <li><b dir="ltr">20+</b><span data-i18n="stat.2"></span></li>
+          <li><b>5</b><span data-i18n="stat.3"></span></li>
+          <li><b>4</b><span data-i18n="stat.4"></span></li>
+        </ul>
+      </section>
+      <section class="sec" aria-labelledby="whyT">
+        <h2 id="whyT" data-i18n="why.T">מה שונה אצלנו</h2>
+        <ul class="why">
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11h16v10H4zM3 7h18v4H3zM12 7v14"/><path d="M12 7c-1.5-3-5-3-5 0M12 7c1.5-3 5-3 5 0"/></svg><div><h3 data-i18n="why.1t"></h3><p data-i18n="why.1d"></p></div></li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><div><h3 data-i18n="why.2t"></h3><p data-i18n="why.2d"></p></div></li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg><div><h3 data-i18n="why.3t"></h3><p data-i18n="why.3d"></p></div></li>
+          <li><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><div><h3 data-i18n="why.4t"></h3><p data-i18n="why.4d"></p></div></li>
+        </ul>
+      </section>
+      <section class="sec about" aria-labelledby="aboutT">
+        <div>
+          <h2 id="aboutT" data-i18n="about.T">מי אנחנו</h2>
+          <p data-i18n="about.p1"></p>
+          <p data-i18n="about.p2"></p>
+          <p data-i18n="about.p3"></p>
+        </div>
+        <figure class="quote"><b>17</b><figcaption data-i18n="about.q"></figcaption></figure>
+      </section>
+      <section class="sec" aria-labelledby="faqT">
+        <h2 id="faqT" data-i18n="faq.T">שאלות נפוצות</h2>
+        <div class="faq">
+          <details><summary data-i18n="faq.1q"></summary><p data-i18n="faq.1a"></p></details>
+          <details><summary data-i18n="faq.2q"></summary><p data-i18n="faq.2a"></p></details>
+          <details><summary data-i18n="faq.3q"></summary><p data-i18n="faq.3a"></p></details>
+          <details><summary data-i18n="faq.4q"></summary><p data-i18n="faq.4a"></p></details>
+          <details><summary data-i18n="faq.5q"></summary><p data-i18n="faq.5a"></p></details>
+          <details><summary data-i18n="faq.6q"></summary><p data-i18n="faq.6a"></p></details>
+          <details><summary data-i18n="faq.7q"></summary><p data-i18n="faq.7a"></p></details>
+        </div>
+      </section>
+      <section class="band ctaband" aria-labelledby="ctaT">
+        <h2 id="ctaT" data-i18n="cta.T">מוכנים? זה לוקח 5 דקות.</h2>
+        <p data-i18n="cta.d"></p>
+        <button type="button" class="primary go" id="ctaGo" data-i18n="hero.go">מתחילים, זה 5 דקות</button>
+      </section>
+    </div>
+
   </main>
 
   <footer>
+    <p class="contact" id="contactLine" hidden></p>
     <button type="button" class="quiet" data-open="dlgA11y" data-i18n="foot.a11y">הצהרת נגישות</button>
     <button type="button" class="quiet" data-open="dlgPrivacy" data-i18n="foot.privacy">מדיניות פרטיות</button>
+    <button type="button" class="quiet" data-open="dlgTerms" data-i18n="foot.terms">תנאי שימוש</button>
     <span id="moverLinks" class="mv-links"></span>
     <p id="footNote"></p>
+    <p class="copy" id="copyLine"></p>
   </footer>
 </div>
 
@@ -371,6 +696,36 @@ footer a{color:var(--accent)}
   <div class="dfoot"><button type="button" class="primary" data-close data-i18n="dlg.close">סגירה</button></div>
 </dialog>
 
+<dialog id="dlgTerms" aria-labelledby="dlgTermsT">
+  <div class="dbody" tabindex="0">
+    <h2 id="dlgTermsT" data-i18n="tr.t">תנאי שימוש</h2>
+    <p class="henote henote-dlg" hidden></p>
+    <ul><li data-i18n="tr.1"></li><li data-i18n="tr.2"></li><li data-i18n="tr.3"></li><li data-i18n="tr.4"></li><li data-i18n="tr.5"></li><li data-i18n="tr.6"></li></ul>
+    <p class="muted" id="trBiz"></p>
+  </div>
+  <div class="dfoot"><button type="button" class="primary" data-close data-i18n="dlg.close">סגירה</button></div>
+</dialog>
+
+<dialog id="dlgCall" aria-labelledby="dlgCallT">
+  <form id="cbForm" novalidate>
+    <div class="dbody" tabindex="0">
+      <h2 id="dlgCallT"></h2>
+      <p id="cbLead"></p>
+      <div class="cbgrid">
+        <div class="field"><label for="cbDay" data-i18n="cb.day">איזה יום?</label>
+          <input type="date" id="cbDay" aria-describedby="cbDayHint"><p class="hint" id="cbDayHint" data-i18n="cb.dayHint"></p></div>
+        <fieldset class="choices" id="cbSlot-fs" role="radiogroup" aria-required="true"><legend data-i18n="cb.slot">באילו שעות נוח לכם?</legend></fieldset>
+        <p id="cbPhone" class="muted"></p>
+        <div class="field"><label for="cbNote" data-i18n="cb.note">על מה תרצו לדבר? (לא חובה)</label><input type="text" id="cbNote" maxlength="200"></div>
+        <label class="choice"><input type="checkbox" id="cbConsent"> <span data-i18n="cb.consent"></span></label>
+      </div>
+      <div class="errsum" id="cbErr" role="alert" tabindex="-1" hidden></div>
+    </div>
+    <div class="dfoot cbfoot"><button type="button" data-close data-i18n="cb.cancel">ביטול</button><button type="submit" class="primary" data-i18n="cb.submit">תאמו לי שיחה</button></div>
+  </form>
+</dialog>
+
+<div class="stickycta" id="stickyCta" hidden><button type="button" class="primary go" id="stickyGo" data-i18n="hero.go">מתחילים, זה 5 דקות</button></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </div>
 

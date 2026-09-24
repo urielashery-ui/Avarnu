@@ -6,7 +6,7 @@ import "../src/catalog.js";
 const D = globalThis.MoversI18N, C = globalThis.MoversCatalog;
 const vars = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(",");
 // מפתחות שמותר שיהיו ריקים בעברית (הערות שמופיעות רק בשפות אחרות)
-const HE_EMPTY = new Set(["res.heNote", "dlg.heNote", "email.heNote", "f.moversConsent.lang"]);
+const HE_EMPTY = new Set(["res.heNote", "dlg.heNote", "email.heNote", "f.moversConsent.lang", "f.suppliesConsent.lang"]);
 
 for (const lang of ["en", "ru", "ar"]) {
   test("שפה " + lang + ": כל המפתחות קיימים, והמשתנים זהים", () => {

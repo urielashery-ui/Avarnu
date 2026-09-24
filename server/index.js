@@ -6,16 +6,17 @@ import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config.js";
 import { openDb } from "./db.js";
 import { makeCrypto, newRef } from "./crypto.js";
-import { validateLead } from "./validate.js";
+import { validateLead, catalog as C } from "./validate.js";
 import { runOutbound, bodyMode } from "./connectors/index.js";
 import { adminRouter } from "./admin.js";
 import { loadSponsors, publicView, withUtm } from "./sponsors.js";
 import { getPaymentProvider, priceFor } from "./payments/index.js";
-import { moversApi, publicMoversRouter } from "./movers.js";
+import { moversApi, publicMoversRouter, sitePage } from "./movers.js";
 import { sendMail, reviewRequestEmail } from "./connectors/email.js";
+import { laterRouter, runReminders } from "./later.js";
 import { randomBytes } from "node:crypto";
 
-const HIT_KEYS = /^(step:[0-9]|results|submit|paid)$/;
+const HIT_KEYS = /^(step:[0-9]|results|submit|paid|video|go)$/;
 
 export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   const crypt = makeCrypto(cfg.dataKey);
@@ -48,7 +49,7 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   // הגדרות לדפדפן — נקבעות ממשתני הסביבה, בלי לבנות מחדש
   app.get("/config.js", (req, res) => {
     const pub = {
-      api: "/api", ads: cfg.adsEnabled, movers: cfg.moversEnabled, moversPaid: cfg.moversEnabled && M.anyPaying(), supportLangs: cfg.supportLangs,
+      api: "/api", ads: cfg.adsEnabled, movers: cfg.moversEnabled, supplies: cfg.suppliesEnabled, callbacks: cfg.callbacksEnabled, moversPaid: cfg.moversEnabled && M.anyPaying(), supportLangs: cfg.supportLangs,
       payments: { enabled: !!pay, priceConcierge: priceFor(cfg, "concierge"), priceSelf: priceFor(cfg, "self") }
     };
     res.type("js").set("Cache-Control", "no-cache").send("window.MOVERS_CONFIG = " + JSON.stringify(pub) + ";\n");
@@ -69,18 +70,22 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
       if (!v.ok) {
         return res.status(400).json({ message: "יש פרטים חסרים או לא תקינים: " + Object.values(v.errors).join(", ") + ".", errors: v.errors });
       }
-      const lead = v.lead, ref = newRef(), amount = priceFor(cfg, lead.service);
-      if (!cfg.moversEnabled) lead.moversConsent = false;
+      const lead = v.lead, ref = newRef(), amount = priceFor(cfg, lead.service), editToken = randomBytes(18).toString("base64url");
+      if (!cfg.moversEnabled) { lead.moversConsent = false; if (lead.suppliesFrom === "movers") lead.suppliesFrom = "self"; }
+      // משלוח קרטונים רק כשהשירות פעיל. אחרת הלקוח מקבל רשימת קניות.
+      if (lead.suppliesFrom === "delivery" && !cfg.suppliesEnabled) { lead.suppliesFrom = "self"; lead.suppliesConsent = false; }
+      const suppliesOrder = lead.supplies === "need" && lead.suppliesFrom === "delivery";
       const wantsMovers = lead.moveStatus === "quotes" && lead.moversConsent;
       let picked = [];
       const needsPayment = !!pay && amount > 0;
       const tasks = lead.checklist.map((i) => ({ id: i.id, title: i.title, status: bodyMode(i) === "auto" ? "auto" : "todo" }));
       // בשירות מלא: גם הגשת בקשות ההנחה היא משימה של הנציג
       if (lead.service === "concierge") for (const b of lead.benefits) tasks.push({ id: b.id, title: b.title, status: "todo" });
+      if (suppliesOrder) tasks.push({ id: "supplies", title: "הזמנת קרטונים וחומרי אריזה (" + C.fmtDate(lead.suppliesDate) + ")", status: "todo" });
       const id = db.createLead({
         ref, service: lead.service, newCity: lead.newCity, moveDate: lead.moveDate, data: crypt.encrypt(lead), tasks,
         status: needsPayment ? "awaiting_payment" : "new", amount, marketing: lead.marketing,
-        moveQuote: wantsMovers, reviewToken: wantsMovers ? randomBytes(18).toString("base64url") : null,
+        moveQuote: wantsMovers, reviewToken: wantsMovers ? randomBytes(18).toString("base64url") : null, editToken,
         onCreate: (leadId) => {
           if (!wantsMovers) return;
           picked = M.pick([lead.oldCity, lead.newCity], cfg.moversPerLead);
@@ -88,7 +93,9 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
         }
       });
       if (wantsMovers) db.bump(picked.length ? "movers:matched" : "movers:unmatched");
-      const moversOut = wantsMovers ? { movers: picked.map((m) => ({ name: m.name, phone: m.phone })), moversRequested: true } : {};
+      const out = wantsMovers ? { movers: picked.map((m) => ({ name: m.name, phone: m.phone })), moversRequested: true } : {};
+      out.editToken = editToken;
+      if (lead.supplies === "need") { out.supplies = suppliesOrder ? "ordered" : lead.suppliesFrom; db.bump("supplies:" + out.supplies); }
       db.bump("lead");
       if (needsPayment) {
         const c = await pay.createCheckout({
@@ -97,9 +104,9 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
           successUrl: cfg.publicUrl + "/#done", cancelUrl: cfg.publicUrl + "/#pay-cancel"
         });
         db.event(id, "payment:checkout", amount + " ₪");
-        return res.status(201).json({ ref, payUrl: c.url, amount, ...moversOut });
+        return res.status(201).json({ ref, payUrl: c.url, amount, ...out });
       }
-      res.status(201).json({ ref, ...moversOut });
+      res.status(201).json({ ref, ...out });
       // החיבורים רצים אחרי שהלקוח קיבל תשובה, כדי שלא יחכה
       app.locals.pending = runOutbound(lead, ref, id, db, cfg).catch((e) => console.error("[outbound]", e));
     } catch (e) { next(e); }
@@ -138,6 +145,8 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
     res.status(204).end();
   });
 
+  // השלמת פרטים אחר כך (API + דף מהמייל)
+  app.use(laterRouter({ db, crypt, cfg }));
   app.use("/api", (req, res) => res.status(404).json({ message: "לא נמצא" }));
   app.use("/api", (err, req, res, next) => {
     const status = err.status || err.statusCode || 500;
@@ -178,7 +187,8 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   // כתובות לפי שפה: /en, /ru, /ar (אותו דף, השפה נקבעת בדפדפן)
   app.get(/^\/(he|en|ru|ar)\/?$/, (req, res) => res.sendFile(fileURLToPath(new URL("../public/index.html", import.meta.url))));
   app.use(express.static(fileURLToPath(new URL("../public/", import.meta.url)), { extensions: ["html"], maxAge: cfg.prod ? "1h" : 0 }));
-  app.use((req, res) => res.status(404).type("html").send('<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>לא נמצא</title><p>הדף לא נמצא. <a href="/">לדף הבית</a></p></html>'));
+  app.use((req, res) => res.status(404).send(sitePage("הדף לא נמצא", `<section class="panel"><h1 class="pg-h1">הדף לא נמצא</h1>
+    <p class="lead">אולי הקישור השתנה. אפשר להתחיל מדף הבית.</p><p><a class="btn primary" href="/">לדף הבית</a></p></section>`, { noindex: true })));
 
   // ---- מחיקה אוטומטית של מידע ישן ----
   const purge = () => {
@@ -202,6 +212,9 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   }
   const rtimer = setInterval(() => runReviews().catch((e) => console.error("[reviews]", e)), 3600 * 1000); rtimer.unref();
   app.locals.runReviews = runReviews;
+  const remind = () => runReminders({ db, crypt, cfg });
+  const mtimer = setInterval(() => remind().catch((e) => console.error("[remind]", e)), 3600 * 1000); mtimer.unref();
+  app.locals.runReminders = remind;
 
   app.locals.db = db;
   app.locals.pay = pay;

@@ -110,7 +110,7 @@ export function jobSummary(d) {
     ["גודל הדירה", ROOMS[d.rooms] || (d.rooms ? d.rooms + " חדרים" : "לא צוין")],
     ["מה עוד צריך", extras.join(", ") || "רק הובלה"],
     ["פריטים מיוחדים", d.specialItems || "אין"]
-  ].concat(d.lang && d.lang !== "he" ? [["שפה מועדפת לשיחה", C.LANG_NAMES_HE[d.lang]]] : []);
+  ].concat(d.supplies === "need" && d.suppliesFrom === "movers" ? [["קרטונים וחומרי אריזה (הלקוח מבקש שתביאו ותכללו בהצעה)", C.kitLines(d, "he").map((x) => x.name + ": " + x.qty).join(" · ")]] : []).concat(d.lang && d.lang !== "he" ? [["שפה מועדפת לשיחה", C.LANG_NAMES_HE[d.lang]]] : []);
 }
 export function waLink(phone, text) {
   const p = C.digits(phone).replace(/^0/, "972");
@@ -125,11 +125,11 @@ export function sitePage(title, body, { noindex = false, lang = "he" } = {}) {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">${noindex ? '<meta name="robots" content="noindex">' : ""}
 <title>${esc(title)} · עברנו</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Secular+One&family=Rubik:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@700;800;900&family=Rubik:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/styles.css"></head>
 <body><div id="app" lang="${lang}" dir="${dir}"><a class="skip" href="#main">${esc(T("skip"))}</a><div class="wrap">
-<header class="top"><a class="brand" href="${lang === "he" ? "/" : "/" + lang}">${LOGO}<span>עברנו</span><span class="tld" dir="ltr" aria-hidden="true">${lang === "he" ? ".com" : "avarnu.com"}</span></a></header>
-<main id="main" tabindex="-1">${body}</main>
+<header class="top navy"><a class="brand" href="${lang === "he" ? "/" : "/" + lang}">${LOGO}<span>עברנו</span><span class="tld" dir="ltr" aria-hidden="true">${lang === "he" ? ".com" : "avarnu.com"}</span></a></header>
+<main id="main" class="pg" tabindex="-1">${body}</main>
 <footer><a href="${lang === "he" ? "/" : "/" + lang}">${esc(T("mvp.home"))}</a><a href="/movers?lang=${lang}">${esc(T("foot.movers"))}</a>${lang === "he" ? '<a href="/movers/join">מובילים? הצטרפו</a>' : ""}</footer>
 </div></div></body></html>`;
 }

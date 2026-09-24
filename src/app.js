@@ -29,7 +29,11 @@
   // ---------- הגדרת השלבים (נבנית מחדש בכל החלפת שפה) ----------
   var MOVERS_ON = !!(CFG.movers || CFG.demo);
   var PAY = (CFG.payments && CFG.payments.enabled) ? CFG.payments : null;
+  var SUP_ORDER = !!(CFG.supplies || CFG.demo);
+  var CALL_ON = !!(CFG.callbacks || CFG.demo);      // תיאום שיחה עם נציג (נציג שלנו ממתין על הקו)   // הזמנת קרטונים עם משלוח (צריך ספק פעיל בשרת)
   function wantsQuotes(d) { return d.moveStatus === "quotes"; }
+  function needsKit(d) { return d.supplies === "need"; }
+  function wantsDelivery(d) { return needsKit(d) && d.suppliesFrom === "delivery"; }
   function opts(ids, prefix) { return ids.map(function (x) { return [x, t(prefix + x)]; }); }
   function brands(list) { return [["", t("none")]].concat(list.map(function (x) { return [x, x === "אחר" ? t("o.other") : C.brand(x, LANG)]; })); }
   function priceTag(n) { return PAY ? " " + (n > 0 ? t("price.n", { n: n }) : t("price.free")) : ""; }
@@ -66,16 +70,28 @@
         { id: "moveDate", req: true, w: 3, type: "date", check: "date" },
         { id: "landlord", w: 3, hint: "f.landlord.h", showIf: function (d) { return d.tenure === "rent"; } }
       ]},
-      { id: "moving", moving: true, fields: [
+      { id: "moving", fields: (MOVERS_ON ? [
         { id: "moveStatus", type: "radio", req: true, w: 6, opts: opts(["quotes", "booked", "self"], "o.moveStatus.") },
-        { id: "rooms", type: "select", req: true, w: 3, showIf: wantsQuotes, opts: [["", t("choose")], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", t("o.rooms.6")]] },
         { id: "oldFloor", w: 3, mode: "numeric", max: 2, hint: "f.oldFloor.h", showIf: wantsQuotes },
-        { id: "elevChecks", type: "checks", w: 6, showIf: wantsQuotes, opts: opts(["oldElevator", "newElevator"], "o.") },
+        { id: "elevChecks", type: "checks", w: 3, showIf: wantsQuotes, opts: opts(["oldElevator", "newElevator"], "o.") },
         { id: "dateFlex", type: "radio", w: 6, def: "exact", showIf: wantsQuotes, opts: opts(["exact", "flex"], "o.dateFlex.") },
         { id: "moveExtras", type: "checks", w: 6, showIf: wantsQuotes, opts: opts(["packing", "assembly", "storage"], "o.") },
-        { id: "specialItems", w: 6, max: 120, hint: "f.specialItems.h", showIf: wantsQuotes },
+        { id: "specialItems", w: 6, max: 120, hint: "f.specialItems.h", showIf: wantsQuotes }
+      ] : []).concat([
+        { id: "supplies", type: "radio", w: 6, def: "none", opts: opts(["none", "need"], "o.supplies.") },
+        { id: "rooms", type: "select", req: true, w: 3, showIf: function (d) { return wantsQuotes(d) || needsKit(d); },
+          opts: [["", t("choose")], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", t("o.rooms.6")]] },
+        { group: "g.kit", gid: "kit", hint: "g.kit.h", showIf: needsKit, fields: C.KIT.map(function (k) {
+          return { id: k, w: 2, mode: "numeric", max: 3, ltr: true, check: "qty", showIf: needsKit };
+        }) },
+        { id: "suppliesFrom", type: "radio", w: 6, def: SUP_ORDER ? "delivery" : "self", showIf: needsKit,
+          opts: opts([MOVERS_ON && "movers", SUP_ORDER && "delivery", "self"].filter(Boolean), "o.suppliesFrom.") },
+        { id: "suppliesDate", type: "date", req: true, w: 3, check: "date", hint: "f.suppliesDate.h", showIf: wantsDelivery },
+        { id: "suppliesTo", type: "radio", w: 3, def: "old", showIf: wantsDelivery, opts: opts(["old", "new"], "o.suppliesTo.") },
+        { id: "suppliesConsent", type: "consent", req: true, w: 6, showIf: wantsDelivery, note: LANG !== "he" ? "f.suppliesConsent.lang" : "" }
+      ]).concat(MOVERS_ON ? [
         { id: "moversConsent", type: "consent", req: true, w: 6, showIf: wantsQuotes, note: LANG !== "he" ? "f.moversConsent.lang" : "" }
-      ]},
+      ] : [])},
       { id: "meters", fields: [
         { group: "g.elec", fields: [
           { id: "elecContract", w: 3, mode: "numeric", ltr: true, hint: "f.elecContract.h" },
@@ -102,7 +118,6 @@
         { id: "extras", type: "checks", w: 6, opts: opts(["xCar", "xInsurance", "xPension", "xEmployer", "xPost"], "o.") }
       ]}
     ];
-    if (!MOVERS_ON) S = S.filter(function (s) { return !s.moving; });
     if (API) S.push({ id: "send", fields: [
       { id: "service", type: "radio", req: true, w: 6, def: "self", opts: [
         ["self", t("o.service.self") + priceTag(PAY && PAY.priceSelf)], ["concierge", t("o.service.concierge") + priceTag(PAY && PAY.priceConcierge)]] },
@@ -112,10 +127,12 @@
     ]});
     return S;
   }
-  var STEPS, LAST, allFields, fieldById;
+  var STEPS, LAST, allFields, fieldById, groupShows;
 
+  function stepKey(s, part) { return "s." + s.id + (s.id === "moving" && !MOVERS_ON ? "Pack" : "") + "." + part; }
   function stepLead(s) {
-    var l = t("s." + s.id + ".lead");
+    var l = t(stepKey(s, "lead"));
+    if (s.id === "moving" && MOVERS_ON) l += " " + t("s.movingPack.lead");
     if (s.id === "moving" && CFG.moversPaid) l += " " + t("s.moving.paid");
     if (s.id === "send") {
       if (PAY) l += " " + t("s.send.payNote");
@@ -164,16 +181,17 @@
   function stepHTML(s, i) {
     var body = s.fields.map(function (f) {
       if (f.group) {
-        return '<fieldset class="group"><legend>' + esc(t(f.group)) + "</legend>" + (f.hint ? '<p class="hint">' + esc(t(f.hint)) + "</p>" : "") +
+        if (f.showIf) groupShows.push(f);
+        return '<fieldset class="group"' + (f.gid ? ' id="grp-' + f.gid + '"' : "") + '><legend>' + esc(t(f.group)) + "</legend>" + (f.hint ? '<p class="hint">' + esc(t(f.hint)) + "</p>" : "") +
           '<div class="grid">' + f.fields.map(fieldHTML).join("") + "</div></fieldset>";
       }
       return fieldHTML(f);
     }).join("");
-    return '<section class="panel" data-step="' + i + '" aria-labelledby="h-' + i + '" hidden><h2 id="h-' + i + '" tabindex="-1">' + esc(t("s." + s.id + ".h")) +
+    return '<section class="panel" data-step="' + i + '" aria-labelledby="h-' + i + '" hidden><h2 id="h-' + i + '" tabindex="-1">' + esc(t(stepKey(s, "h"))) +
       '</h2><p class="lead">' + esc(stepLead(s)) + '</p><div class="grid">' + body + "</div></section>";
   }
   function buildForm(keep) {
-    STEPS = defineSteps(); LAST = STEPS.length; allFields = []; fieldById = {};
+    STEPS = defineSteps(); LAST = STEPS.length; allFields = []; fieldById = {}; groupShows = [];
     $("steps").innerHTML = STEPS.map(stepHTML).join("") +
       '<datalist id="cities">' + C.cityList(LANG).map(function (c) { return '<option value="' + esc(c) + '"></option>'; }).join("") + "</datalist>";
     if (keep) setData(keep);
@@ -208,23 +226,24 @@
     });
   }
 
-  var KEY = "movers-v3", step = 0, done = {}, submittedRef = "", paying = false, seen = {}, moversSent = null;
+  var KEY = "movers-v3", step = 0, done = {}, submittedRef = "", paying = false, seen = {}, moversSent = null, kitTouched = false, suppliesSent = null, editToken = "", restored = false, callsAsked = {};
   function hit(k) {
     if (!API || seen[k]) return; seen[k] = true;
     try { fetch(API.replace(/\/$/, "") + "/hit", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ k: k }) }).catch(function () {}); } catch (e) {}
   }
   function save() {
     try {
-      var d = data(); delete d.tz; delete d.consent; delete d.poa; delete d.marketing; delete d.moversConsent;
-      localStorage.setItem(KEY, JSON.stringify({ d: d, done: done, step: step, ref: submittedRef, mv: moversSent }));
+      var d = data(); delete d.tz; delete d.consent; delete d.poa; delete d.marketing; delete d.moversConsent; delete d.suppliesConsent;
+      localStorage.setItem(KEY, JSON.stringify({ d: d, done: done, step: step, ref: submittedRef, mv: moversSent, kt: kitTouched, sup: suppliesSent, et: editToken, cb: callsAsked }));
     } catch (e) {}
   }
   function load() {
     try {
       var s = JSON.parse(localStorage.getItem(KEY) || "null"); if (!s) return;
       var d = s.d || {}; delete d.tz; setData(d);
-      done = s.done || {}; submittedRef = s.ref || ""; moversSent = s.mv || null;
+      done = s.done || {}; submittedRef = s.ref || ""; moversSent = s.mv || null; kitTouched = !!s.kt; suppliesSent = s.sup || null; editToken = s.et || ""; callsAsked = s.cb || {};
       step = Math.min(s.step || 0, LAST);
+      restored = step > 0;
       if (step === LAST && !submittedRef && API) step = LAST - 1;
     } catch (e) {}
   }
@@ -232,10 +251,24 @@
   function applyShowIf() {
     var d = data();
     allFields.forEach(function (f) { if (f.showIf) $("wrap-" + f.id).hidden = !f.showIf(d); });
+    groupShows.forEach(function (g) { $("grp-" + g.gid).hidden = !g.showIf(d); });
+    // "המובילים יביאו" — רק למי שביקש הצעות ממובילים
+    var mo = $("suppliesFrom-movers");
+    if (mo) {
+      mo.closest("label").hidden = !wantsQuotes(d);
+      if (mo.checked && !wantsQuotes(d)) { mo.checked = false; var alt = $("suppliesFrom-" + (SUP_ORDER ? "delivery" : "self")); if (alt) alt.checked = true; d = data(); }
+    }
+    if (wantsDelivery(d) && !d.suppliesDate && d.moveDate && $("suppliesDate")) $("suppliesDate").value = C.suppliesDefaultDate(d.moveDate);
+  }
+  // ממלאים את הכמויות לפי מספר החדרים, כל עוד המשתמש לא שינה אותן בעצמו
+  function fillKit() {
+    if (kitTouched || !$("kBoxes")) return;
+    var k = C.kitFor(data().rooms); if (!k) return;
+    C.KIT.forEach(function (id) { $(id).value = k[id]; });
   }
 
   // ---------- בדיקת תקינות ----------
-  var checks = { tz: C.validTz, phone: C.validPhone, email: C.validEmail, zip: C.validZip, date: C.validDate };
+  var checks = { tz: C.validTz, phone: C.validPhone, email: C.validEmail, zip: C.validZip, date: C.validDate, qty: function (v) { return /^\d{1,3}$/.test(v); } };
   function setErr(f, msg) {
     var e = $(f.id + "-err"), ctrl = (f.type === "radio" || f.type === "checks") ? $(f.id + "-fs") : $(f.id);
     if (msg) { e.textContent = msg; e.hidden = false; ctrl.setAttribute("aria-invalid", "true"); }
@@ -254,6 +287,8 @@
       if (f.req && !v) { var mk = "m." + f.id; msg = C.T(LANG, mk) !== mk ? t(mk) : t("m.default"); }
       else if (v && f.check && checks[f.check] && !checks[f.check](v)) msg = t("chk." + f.check);
       if (!msg && f.id === "service" && v === "self" && !d.email) msg = t("chk.serviceEmail");
+      if (!msg && f.id === "suppliesDate" && v && d.moveDate && v > d.moveDate) msg = t("chk.suppliesAfter");
+      if (!msg && f.id === "suppliesTo" && wantsDelivery(d) && v === "old" && !(d.oldStreet && d.oldCity)) msg = t("chk.suppliesOld");
       setErr(f, msg);
       if (msg) errs.push([f, msg]);
     });
@@ -277,12 +312,15 @@
     step = n;
     document.querySelectorAll("[data-step]").forEach(function (s) { s.hidden = +s.dataset.step !== n; });
     var res = n === LAST;
-    $("results").hidden = !res; $("nav").hidden = res; $("hero").hidden = n > 0; $("how").hidden = res || n > 0;
-    $("progress").hidden = res;
+    $("results").hidden = !res; $("nav").hidden = res; $("hero").hidden = n > 0; $("how").hidden = res || n > 0; $("more").hidden = res || n > 0;
+    $("progress").hidden = res; $("autosave").hidden = res;
+    if (n > 0 && !$("explainer").hidden && !document.documentElement.classList.contains("videomode")) exClose(false);
+    if (focus) $("welcome").hidden = true;
     $("errsum").hidden = true;
     if (!res) {
-      $("stepText").innerHTML = esc(t("step.of", { n: n + 1, total: STEPS.length })) + ' <span class="muted">' + esc(t("s." + STEPS[n].id + ".name")) + "</span>";
+      $("stepText").innerHTML = esc(t("step.of", { n: n + 1, total: STEPS.length })) + ' <span class="muted">' + esc(t(stepKey(STEPS[n], "name"))) + "</span>";
       $("stepBar").style.width = ((n + 1) / STEPS.length * 100) + "%";
+      $("dots").innerHTML = STEPS.map(function (s, i) { return '<li class="' + (i < n ? "done" : i === n ? "cur" : "") + '">' + (i < n ? "✓" : i + 1) + "</li>"; }).join("");
       $("back").hidden = n === 0;
       $("next").textContent = n < STEPS.length - 1 ? t("nav.next") : (API ? t("nav.send") : t("nav.finish"));
     }
@@ -290,6 +328,7 @@
     hit(res ? "results" : "step:" + n);
     if (res) render();
     updateLabel(); save();
+    try { window.dispatchEvent(new Event("avarnu-step")); } catch (e) {}
     if (focus) {
       var h = res ? $("rTitle") : $("h-" + n);
       h.focus(); window.scrollTo({ top: 0, behavior: app.classList.contains("nm") ? "auto" : "smooth" });
@@ -300,7 +339,7 @@
     var d = data();
     $("lblFrom").textContent = C.addrL(d, "old", LANG) || t("label.fromEmpty");
     $("lblTo").textContent = C.addrL(d, "new", LANG) || t("label.toEmpty");
-    $("lblDate").textContent = C.fmtDate(d.moveDate) || t("label.whenEmpty");
+    $("lblDate").textContent = (LANG === "ar" ? C.ltrNums(C.fmtDate(d.moveDate)) : C.fmtDate(d.moveDate)) || t("label.whenEmpty");
     var items = C.build(d, { lang: LANG }), c = items.filter(function (i) { return done[i.id]; }).length;
     $("lblStatus").textContent = c ? t("label.statusN", { c: c, n: items.length }) : t("label.statusNone");
     var bl = C.benefits(d, { lang: LANG }).filter(function (b) { return b.sure === "likely"; }).length;
@@ -338,13 +377,27 @@
         b.innerHTML = esc(t("item.copy")) + '<span class="sr">' + esc(t("item.copyFor", { t: i.t })) + "</span>";
         b.onclick = function () { copy(i.msg, t("copy.done")); };
         acts.appendChild(b);
+        if (CALL_ON && C.CALL_IDS.indexOf(i.id) >= 0 && (!API || submittedRef)) {
+          var ask = callsAsked[i.id];
+          if (ask) {
+            var sp = document.createElement("span"); sp.className = "cbasked";
+            sp.textContent = t("cb.asked", { day: C.fmtDate(ask.day), slot: slotText(ask.slot) }); acts.appendChild(sp);
+          } else {
+            var cbb = document.createElement("button"); cbb.type = "button"; cbb.setAttribute("data-call", i.id);
+            cbb.innerHTML = esc(t("cb.btn")) + '<span class="sr">' + esc(t("item.copyFor", { t: i.t })) + "</span>";
+            cbb.onclick = function () { openCall(i, cbb); };
+            acts.appendChild(cbb);
+          }
+        }
         li.querySelector("input").onchange = function (e) { done[i.id] = e.target.checked; li.classList.toggle("is-done", e.target.checked); tally(); save(); };
         ul.appendChild(li);
       });
       sec.appendChild(ul); box.appendChild(sec);
     });
     renderBenefits(d);
+    renderLater(d);
     renderMoving(d);
+    renderSupplies(d);
     $("rTitle").textContent = d.firstName ? t("res.titleName", { name: d.firstName }) : t("res.title");
     $("rSub").textContent = t("res.sub", { n: items.length, addr: C.addrL(d, "new", LANG) || "—", date: C.fmtDate(d.moveDate) || "—" });
     var rb = $("refbox");
@@ -426,6 +479,194 @@
     box.innerHTML = html;
   }
 
+  // ---------- פרטים שחסרים: משלימים אחר כך, בלי להתחיל מחדש ----------
+  function renderLater(d) {
+    var box = $("later"), miss = C.missing(d), labels = C.labels(LANG);
+    if (!miss.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = '<h2 id="laterTitle" tabindex="-1">' + esc(miss.length === 1 ? t("later.one") : t("later.title", { n: miss.length })) + "</h2>" +
+      "<p>" + esc(t("later.lead")) + (API && submittedRef && d.email ? " " + esc(t("later.leadApi")) : "") + '</p><p class="muted">' + esc(t("later.tip")) + "</p>" +
+      '<div class="grid">' + miss.map(function (k) {
+        var f = fieldById[k] || {};
+        return '<div class="field w3"><label for="lt-' + k + '">' + esc(labels[k]) + '</label><input type="text" id="lt-' + k + '" maxlength="120"' +
+          (f.mode ? ' inputmode="' + f.mode + '"' : "") + (f.ltr ? ' dir="ltr"' : "") + (f.list ? ' list="' + f.list + '"' : "") + "></div>";
+      }).join("") + '</div><div class="acts" id="laterActs"></div>';
+    var acts = $("laterActs"), b = document.createElement("button");
+    b.type = "button"; b.className = "primary"; b.textContent = t("later.save"); b.onclick = saveLater;
+    acts.appendChild(b);
+    if (d.moveDate) acts.appendChild(extLink(calUrl(d), t("later.cal"), ""));
+  }
+  function saveLater() {
+    var fields = {}, n = 0;
+    C.LATER.forEach(function (k) { var el = $("lt-" + k); if (el && el.value.trim()) { fields[k] = el.value.trim(); n++; } });
+    if (!n) { toast(t("later.empty")); $("lt-" + C.missing(data())[0]).focus(); return; }
+    Object.keys(fields).forEach(function (k) { if ($(k)) $(k).value = fields[k]; });
+    save();
+    function after(ok) {
+      render();
+      var left = C.missing(data()).length;
+      toast(!ok ? t("later.fail") : left ? t("later.savedSome", { n: left }) : t("later.saved"));
+      var h = left ? $("laterTitle") : $("rTitle"); if (h) h.focus();
+    }
+    if (API && editToken) {
+      fetch(API.replace(/\/$/, "") + "/leads/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: editToken, fields: fields }) })
+        .then(function (r) { after(r.ok); }, function () { after(false); });
+    } else after(true);
+  }
+  // תזכורת ביומן גוגל ליום שמקבלים מפתח
+  function calUrl(d) {
+    var next = new Date(d.moveDate + "T12:00:00Z"); next.setUTCDate(next.getUTCDate() + 1);
+    var link = API && editToken ? location.origin + "/u/" + editToken : (API ? location.origin : "https://avarnu.com");
+    return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(t("later.calText")) +
+      "&dates=" + d.moveDate.replace(/-/g, "") + "/" + next.toISOString().slice(0, 10).replace(/-/g, "") +
+      "&details=" + encodeURIComponent(t("later.calDetails", { url: link }));
+  }
+
+  // ---------- סרטון הסבר (אנימציה עם כתוביות, בלי קול) ----------
+  var EX_N = 7, EX_MS = 4500, exIdx = 0, exT0 = 0, exElapsed = 0, exTimer = null, exPlaying = false, exEnded = false;
+  function exShow(i) {
+    document.querySelectorAll("#stage .scene").forEach(function (sc) { sc.classList.toggle("on", +sc.dataset.sc === i); });
+    $("exCap").textContent = i ? t("ex.s" + i) : "";
+  }
+  function exBtn() { $("exPlay").textContent = exPlaying ? t("ex.pause") : exEnded ? t("ex.replay") : exElapsed ? t("ex.resume") : t("ex.play"); }
+  function exTick() {
+    var total = EX_N * EX_MS, el = exElapsed + (Date.now() - exT0);
+    if (el >= total) { clearInterval(exTimer); exPlaying = false; exEnded = true; exElapsed = 0; $("exBar").style.width = "100%"; exBtn(); return; }
+    var i = Math.floor(el / EX_MS) + 1;
+    if (i !== exIdx) { exIdx = i; exShow(i); }
+    $("exBar").style.width = (el / total * 100) + "%";
+  }
+  function exPlay() {
+    if (exEnded) { exEnded = false; exIdx = 0; exShow(0); }
+    exPlaying = true; exT0 = Date.now(); $("stage").classList.remove("paused");
+    clearInterval(exTimer); exTimer = setInterval(exTick, 100); exTick(); exBtn();
+  }
+  function exPause() {
+    if (!exPlaying) return;
+    exPlaying = false; exElapsed += Date.now() - exT0; clearInterval(exTimer); $("stage").classList.add("paused"); exBtn();
+  }
+  function exClose(focusBack) {
+    exPause(); $("explainer").hidden = true; $("exOpen").setAttribute("aria-expanded", "false");
+    if (focusBack) $("exOpen").focus();
+  }
+  $("exOpen").onclick = function () {
+    $("explainer").hidden = false; $("exOpen").setAttribute("aria-expanded", "true");
+    exEnded = false; exElapsed = 0; exIdx = 0; exShow(0); exPlay(); hit("video");
+    $("exTitle").setAttribute("tabindex", "-1"); $("exTitle").focus();
+    $("explainer").scrollIntoView({ block: "start", behavior: app.classList.contains("nm") ? "auto" : "smooth" });
+  };
+  $("exPlay").onclick = function () { if (exPlaying) exPause(); else exPlay(); };
+  $("exClose").onclick = function () { exClose(true); };
+  // כפתור ההתחלה בראש הדף
+  function goFill() { $("firstName").focus(); $("firstName").scrollIntoView({ block: "center", behavior: app.classList.contains("nm") ? "auto" : "smooth" }); hit("go"); }
+  $("heroGo").onclick = goFill; $("stickyGo").onclick = goFill; $("ctaGo").onclick = goFill;
+  // בטלפון: כפתור "מתחילים" צף, כל עוד לא רואים את הכפתור הראשי או את הטופס
+  (function () {
+    if (!("IntersectionObserver" in window)) return;
+    var vis = { go: true, form: false };
+    function upd() { $("stickyCta").hidden = !(step === 0 && !vis.go && !vis.form && !document.documentElement.classList.contains("videomode")); }
+    new IntersectionObserver(function (es) { vis.go = es[0].isIntersecting; upd(); }).observe($("heroGo"));
+    new IntersectionObserver(function (es) { vis.form = es[0].isIntersecting; upd(); }, { rootMargin: "0px 0px -30% 0px" }).observe($("f"));
+    window.addEventListener("avarnu-step", upd);
+  })();
+  // האיור נעצר כשמבקשים לעצור תנועה
+  function artMotion() {
+    var a = $("moveArt"); if (!a || !a.pauseAnimations) return;
+    var stop = app.classList.contains("nm") || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+    if (stop) a.pauseAnimations(); else a.unpauseAnimations();
+  }
+  // תלת-ממד: הסצנה נוטה לפי העכבר (לא כשביקשו לעצור תנועה)
+  (function () {
+    var viz = $("viz"), hero = $("hero"), reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!viz || reduce) return;
+    hero.addEventListener("pointermove", function (e) {
+      if (app.classList.contains("nm") || e.pointerType === "touch") return;
+      var r = hero.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      viz.style.setProperty("--ry", (-14 + x * 22).toFixed(1) + "deg"); viz.style.setProperty("--rx", (8 - y * 14).toFixed(1) + "deg");
+    });
+    hero.addEventListener("pointerleave", function () { viz.style.removeProperty("--ry"); viz.style.removeProperty("--rx"); });
+  })();
+  $("exStart").onclick = function () { exClose(false); $("firstName").focus(); $("firstName").scrollIntoView({ block: "center" }); };
+
+  // ---------- תיאום שיחה עם נציג של גוף ----------
+  var curCall = null;
+  function slotText(sl) { var p = String(sl).split("-"); return ("0" + p[0]).slice(-2) + ":00–" + ("0" + p[1]).slice(-2) + ":00"; }
+  function openCall(item, btn) {
+    curCall = item;
+    $("dlgCallT").textContent = t("cb.title", { t: item.t });
+    $("cbLead").textContent = t("cb.lead");
+    $("cbDay").value = C.nextCallDay(); $("cbDay").removeAttribute("aria-invalid");
+    $("cbSlot-fs").removeAttribute("aria-invalid");
+    $("cbSlot-fs").innerHTML = "<legend>" + esc(t("cb.slot")) + "</legend>" + C.SLOTS.map(function (sl) {
+      return '<label class="choice"><input type="radio" name="cbSlot" id="cbSlot-' + sl + '" value="' + sl + '"> <span dir="ltr">' + slotText(sl) + "</span></label>";
+    }).join("");
+    var d = data();
+    $("cbPhone").textContent = d.phone ? t("cb.phone", { phone: d.phone }) : "";
+    $("cbNote").value = ""; $("cbConsent").checked = false; $("cbErr").hidden = true;
+    opener = btn;
+    var dl = $("dlgCall"); if (dl.showModal) dl.showModal(); else dl.setAttribute("open", "");
+    $("cbDay").focus();
+  }
+  $("cbForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var day = $("cbDay").value, sl = document.querySelector('input[name="cbSlot"]:checked'), errs = [];
+    $("cbDay").toggleAttribute("aria-invalid", !C.validCallDay(day));
+    $("cbSlot-fs").toggleAttribute("aria-invalid", !sl);
+    if (!C.validCallDay(day)) errs.push(["cbDay", t("cb.errDay")]);
+    if (!sl) errs.push(["cbSlot-" + C.SLOTS[0], t("cb.errSlot")]);
+    if (!$("cbConsent").checked) errs.push(["cbConsent", t("cb.errConsent")]);
+    var box = $("cbErr");
+    function showErr(list) {
+      box.innerHTML = "<h2>" + esc(list.length === 1 ? t("err.one") : t("err.many", { n: list.length })) + "</h2><ul>" +
+        list.map(function (x) { return '<li><a href="#' + x[0] + '" data-focus="' + x[0] + '">' + esc(x[1]) + "</a></li>"; }).join("") + "</ul>";
+      box.hidden = false; box.focus();
+    }
+    if (errs.length) return showErr(errs);
+    var req = { body: curCall.id, day: day, slot: sl.value, note: $("cbNote").value.trim(), consent: true };
+    function done(msg) {
+      callsAsked[curCall.id] = { day: day, slot: sl.value }; save();
+      opener = null; $("dlgCall").close(); render(); toast(msg);
+      var c = $("done-" + curCall.id); if (c) c.focus();
+    }
+    if (!API) return done(t("cb.demoOk"));
+    req.token = editToken;
+    fetch(API.replace(/\/$/, "") + "/callbacks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw j; return j; }); })
+      .then(function () { done(t("cb.ok", { day: C.fmtDate(day), slot: slotText(sl.value) })); },
+        function (err) { showErr([["cbDay", (err && err.message) || t("err.network")]]); });
+  });
+  $("cbErr").addEventListener("click", function (e) {
+    var a = e.target.closest("a[data-focus]"); if (!a) return;
+    e.preventDefault(); var el = $(a.dataset.focus); if (el) el.focus();
+  });
+
+  // ---------- קרטונים וחומרי אריזה ----------
+  function renderSupplies(d) {
+    var box = $("supplies");
+    if (!needsKit(d)) { box.hidden = true; return; }
+    var lines = C.kitLines(d, LANG);
+    box.hidden = false;
+    var from = d.suppliesFrom, msg;
+    if (from === "movers") msg = t("sup.movers");
+    else if (from === "delivery" && CFG.demo) msg = t("sup.demo");
+    else if (from === "delivery" && suppliesSent === "ordered") msg = t("sup.ordered", { date: C.fmtDate(d.suppliesDate), addr: C.addrL(d, d.suppliesTo === "new" ? "new" : "old", LANG) });
+    else msg = t("sup.self");
+    var html = '<h2 id="supTitle">' + esc(t("sup.title")) + "</h2><p>" + esc(msg) + "</p>" +
+      '<ul class="kit" aria-label="' + esc(t("sup.listSr")) + '">' + lines.map(function (x) { return "<li><span>" + esc(x.name) + "</span><b>" + x.qty + "</b></li>"; }).join("") + "</ul>" +
+      '<div class="acts" id="supActs"></div>' +
+      '<h3 id="tipsTitle">' + esc(t("sup.tipsTitle")) + '</h3><ol class="tips" aria-labelledby="tipsTitle">' +
+      ["1", "2", "3", "4", "5"].map(function (n) { return "<li>" + esc(t("sup.tip" + n)) + "</li>"; }).join("") + "</ol>";
+    box.innerHTML = html;
+    var acts = $("supActs");
+    var b = document.createElement("button"); b.type = "button"; b.textContent = t("sup.copy");
+    b.onclick = function () { copy(t("sup.title") + ":\n" + C.kitText(d, LANG), t("sup.copied")); };
+    if (from !== "delivery" || CFG.demo) {
+      var city = C.cityName(C.canonCity(d.oldCity || d.newCity), "he");
+      acts.appendChild(extLink("https://www.google.com/search?q=" + encodeURIComponent("קרטונים להובלה משלוח " + (city || "")), t("sup.search"), from === "self" ? "primary" : ""));
+    }
+    acts.appendChild(b);
+  }
+
   // ---------- שותפים (תוכן ממומן) ----------
   var partnersCache = null;
   function renderPartners(d) {
@@ -487,6 +728,8 @@
       .then(function (j) {
         submittedRef = j.ref;
         moversSent = j.moversRequested ? (j.movers || []) : null;
+        suppliesSent = j.supplies || null;
+        editToken = j.editToken || "";
         if (j.payUrl) { paying = true; save(); toast(t("pay.redirect")); location.href = j.payUrl; return; }
         showStep(LAST, true);
       })
@@ -517,6 +760,13 @@
     $("prRetention").innerHTML = esc(t("dlg.pr.m3", { n: "\u0000" })).replace("\u0000", fill(SITE.retentionDays, "[מספר]"));
     $("prContact").innerHTML = esc(t("dlg.pr.contact")) + " " + fill(SITE.privacyName, "[שם]") + ", " + ' <span dir="ltr">' + fill(SITE.privacyEmail, "[כתובת מייל]") + "</span>";
     $("prBiz").innerHTML = esc(t("dlg.pr.biz")) + " " + fill(SITE.business, "[שם העסק ומספר ח.פ.]");
+    $("trBiz").innerHTML = esc(t("dlg.pr.biz")) + " " + fill(SITE.business, "[שם העסק ומספר ח.פ.]");
+    // יצירת קשר בתחתית הדף — מופיע רק אם מולאו פרטים ב-site-info.js
+    var cl = $("contactLine"), parts = [];
+    if (SITE.contactEmail) parts.push('<a href="mailto:' + esc(SITE.contactEmail) + '" dir="ltr">' + esc(SITE.contactEmail) + "</a>");
+    if (SITE.whatsapp) parts.push('<a href="https://wa.me/' + esc(String(SITE.whatsapp).replace(/\D/g, "").replace(/^0/, "972")) + '" target="_blank" rel="noopener">' + esc(t("foot.wa")) + '<span class="sr"> ' + esc(t("newWin")) + "</span></a>");
+    cl.hidden = !parts.length; cl.innerHTML = parts.length ? esc(t("foot.contact")) + " " + parts.join("") : "";
+    $("copyLine").textContent = "© " + new Date().getFullYear() + " " + t("foot.brand") + (SITE.business ? " · " + SITE.business : "");
     $("privMode").textContent = API ? t("dlg.pr.modeApi") : t("dlg.pr.modeLocal");
     $("footNote").textContent = API ? t("foot.noteApi") : t("foot.note");
     document.querySelectorAll(".henote-dlg").forEach(function (el) { el.hidden = LANG === "he"; el.textContent = t("dlg.heNote"); });
@@ -527,12 +777,16 @@
     document.querySelector(".brand .tld").textContent = LANG === "he" ? ".com" : "avarnu.com";
     if (armed) { armed = false; }
     $("resetBtn").textContent = t("reset.btn");
+    themeLabel();
+    $("exText").innerHTML = [1, 2, 3, 4, 5, 6, 7].map(function (i) { return "<li>" + esc(t("ex.s" + i)) + "</li>"; }).join("");
+    if (exIdx) exShow(exIdx);
+    exBtn();
   }
 
   function setLang(l, focus) {
     if (C.LANGS.indexOf(l) < 0 || l === LANG) return;
     var keep = data(); keep.tz = $("tz") ? $("tz").value : "";
-    ["consent", "poa", "marketing", "moversConsent"].forEach(function (k) { if ($(k)) keep[k] = $(k).checked; });
+    ["consent", "poa", "marketing", "moversConsent", "suppliesConsent"].forEach(function (k) { if ($(k)) keep[k] = $(k).checked; });
     LANG = l;
     try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
     if (API && history.replaceState) {
@@ -549,7 +803,11 @@
   $("f").addEventListener("submit", function (e) {
     e.preventDefault();
     if (!validate(step)) return;
-    if (API && step === STEPS.length - 1) { submitLead(); return; }
+    if (API && step === STEPS.length - 1) {
+      // לפני שליחה בודקים את כל השלבים (למשל ת״ז, שלא נשמרת בדפדפן ולכן חסרה אחרי חזרה לאתר)
+      for (var n = 0; n < step; n++) if (!validate(n)) { showStep(n, true); validate(n); return; }
+      submitLead(); return;
+    }
     showStep(step + 1, true);
   });
   $("back").onclick = function () { showStep(Math.max(0, step - 1), true); };
@@ -558,16 +816,20 @@
   $("f").addEventListener("input", function (e) {
     var f = fieldById[e.target.id] || fieldById[e.target.name];
     if (f && $(f.id + "-err") && !$(f.id + "-err").hidden) setErr(f, "");
+    if (C.KIT.indexOf(e.target.id) >= 0) kitTouched = true;
     applyShowIf(); updateLabel(); save();
   });
-  $("f").addEventListener("change", function () { applyShowIf(); save(); });
+  $("f").addEventListener("change", function (e) {
+    if (e.target.id === "rooms" || e.target.name === "supplies") fillKit();
+    applyShowIf(); save();
+  });
   $("langSel").addEventListener("change", function (e) { setLang(e.target.value, true); });
 
   var armed = false;
   $("resetBtn").onclick = function () {
     if (!armed) { armed = true; $("resetBtn").textContent = t("reset.confirm"); setTimeout(function () { armed = false; $("resetBtn").textContent = t("reset.btn"); }, 4000); return; }
     try { localStorage.removeItem(KEY); } catch (e) {}
-    done = {}; submittedRef = ""; moversSent = null; armed = false; $("resetBtn").textContent = t("reset.btn");
+    done = {}; callsAsked = {}; submittedRef = ""; moversSent = null; suppliesSent = null; kitTouched = false; editToken = ""; armed = false; $("resetBtn").textContent = t("reset.btn");
     buildForm(null);
     showStep(0, true); toast(t("reset.done"));
   };
@@ -581,6 +843,7 @@
     document.querySelectorAll("[data-fs]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.fs === prefs.fs)); });
     document.querySelectorAll("[data-tog]").forEach(function (b) { b.setAttribute("aria-pressed", String(!!prefs[b.dataset.tog])); });
     try { localStorage.setItem(A11Y, JSON.stringify(prefs)); } catch (e) {}
+    if (typeof artMotion === "function") artMotion();
   }
   function panel(open) {
     $("a11yPanel").hidden = !open; $("a11yBtn").setAttribute("aria-expanded", String(open));
@@ -607,6 +870,21 @@
     dl.addEventListener("click", function (e) { if (e.target === dl) dl.close(); });
   });
 
+  // ---------- מצב בהיר / כהה ----------
+  var TH = "avarnu-theme";
+  try { var st = localStorage.getItem(TH); if (st === "dark" || st === "light") document.documentElement.setAttribute("data-theme", st); } catch (e) {}
+  function curTheme() {
+    var v = document.documentElement.getAttribute("data-theme"); if (v) return v;
+    return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function themeLabel() { $("themeBtn").textContent = curTheme() === "dark" ? t("theme.toLight") : t("theme.toDark"); }
+  $("themeBtn").onclick = function () {
+    var n = curTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", n);
+    try { localStorage.setItem(TH, n); } catch (e) {}
+    themeLabel();
+  };
+
   // ---------- הפעלה ----------
   buildForm(null);
   applyStatic();
@@ -620,5 +898,18 @@
     submittedRef = "";
     showStep(STEPS.length - 1, false);
     var eb = $("errsum"); eb.innerHTML = "<h2>" + esc(t("err.payCancelT")) + "</h2><p>" + esc(t("err.payCancel")) + "</p>"; eb.hidden = false; eb.focus();
-  } else showStep(step, false);
+  } else if (location.hash === "#video") {
+    // מצב הקלטה: רק הסרטון, על כל המסך (בשביל קובץ וידאו לרשתות)
+    document.documentElement.classList.add("videomode");
+    showStep(0, false);
+    $("explainer").hidden = false; exShow(0);
+    setTimeout(exPlay, 800);
+  } else {
+    showStep(step, false);
+    if (restored && step < LAST) {
+      var wb = $("welcome");
+      wb.textContent = t("wb.back") + ($("tz") && !$("tz").value ? " " + t("wb.tz") : "");
+      wb.hidden = false;
+    }
+  }
 })();

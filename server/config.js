@@ -40,9 +40,15 @@ export function loadConfig(overrides = {}) {
     payments,
     adsEnabled: e.ADS_ENABLED === "true",
     moversEnabled: e.MOVERS_ENABLED === "true",
+    // הזמנת קרטונים וחומרי אריזה עם משלוח. SUPPLIES_TO = המייל של ספק האריזות (אם ריק — ההזמנה מגיעה אליך כמשימה)
+    suppliesEnabled: e.SUPPLIES_ENABLED === "true",
+    // תיאום שיחה עם נציג של גוף: נציג שלנו ממתין על הקו ומחבר את הלקוח. להפעיל רק כשיש מי שיעשה את זה.
+    callbacksEnabled: e.CALLBACK_ENABLED === "true",
+    suppliesTo: e.SUPPLIES_TO || "",
     supportLangs: String(e.SUPPORT_LANGS || "he").split(",").map((x) => x.trim()).filter((x) => ["he", "en", "ru", "ar"].includes(x)),
     moversPerLead: Math.min(5, Math.max(1, Number(e.MOVERS_PER_LEAD || 3))),
     reviewDelayDays: Number(e.REVIEW_DELAY_DAYS || 3),
+    remindAfterHours: Number(e.REMIND_AFTER_HOURS || 24),   // תזכורת ראשונה על פרטים חסרים
     minReviewsToShow: Number(e.MIN_REVIEWS_TO_SHOW || 3),
     sponsorsFile: e.SPONSORS_FILE || "config/sponsors.json",
     port: Number(e.PORT || 3000),
