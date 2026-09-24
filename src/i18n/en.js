@@ -55,7 +55,7 @@
     "o.reservist": "Active IDF reservist", "o.soldier": "Lone soldier, or national / civil service", "o.oleh": "New immigrant (made aliyah in the last 2 years)",
     "o.lowIncome": "Low income, or income support / alimony from National Insurance", "o.student": "Student",
     "g.newAddr": "Your new address", "g.oldAddr": "The address you're leaving", "g.oldAddr.h": "So you can close accounts there and forward your mail.",
-    "f.newStreet": "Street", "f.newNum": "House number", "f.newCity": "City or town", "f.newApt": "Apartment number", "f.zip": "Postal code", "f.zip.h": "7 digits. Don't know it? You can skip it.",
+    "f.newStreet": "Street", "f.newNum": "House number", "f.newCity": "City or town", "f.newApt": "Apartment number", "f.zip": "Postal code", "f.zip.h": "7 digits. You can also skip it.",
     "f.floor": "Floor", "f.oldStreet": "Street and house number", "f.oldApt": "Apartment number", "f.oldCity": "City or town",
     "f.moveDate": "On what day do you get the keys?", "f.landlord": "Landlord's name", "f.landlord.h": "For the municipality. If you're the owner, skip this.",
     "f.moveStatus": "What about the move itself?", "o.moveStatus.quotes": "I want quotes from approved movers", "o.moveStatus.booked": "I've already booked a mover", "o.moveStatus.self": "I'm moving by myself",
@@ -480,6 +480,21 @@
     "tr.3": "Links lead to other organizations' websites. We are not responsible for their content or for changes to it.",
     "tr.4": "If you asked a team member to handle things for you, we'll do so only according to the consent and power of attorney you gave.",
     "tr.5": "Movers and suppliers are independent businesses. Any agreement with them is between you and them.",
-    "tr.6": "You can ask at any time to see, correct or delete your details."
+    "tr.6": "You can ask at any time to see, correct or delete your details.",
+    // ===== כתובת: ערים ורחובות, מפה =====
+    "addr.map": "Show on map",
+    "addr.mapHide": "Hide map",
+    "addr.mapNeed": "Enter the street, number and city to see the map.",
+    "addr.mapTitle": "Map: {a}",
+    "addr.mapOpen": "Open in Google Maps",
+    "addr.mapNote": "The map is loaded from Google Maps.",
+    "addr.found": "{n} streets in {city}. Start typing and pick from the list.",
+    "addr.ok": "Street found in the official list.",
+    "addr.miss": "We couldn't find \"{s}\" in the official list for {city}.",
+    "addr.maybe": "Did you mean:",
+    "addr.missNone": "Check the spelling. If it's a new street, you can continue.",
+    "addr.demo": "This demo has only a few sample streets. The live site has the full list.",
+    "f.zip.find": "Find it at Israel Post",
+    "dlg.pr.l6": "Map: only if you click \"Show on map\", the address is sent to Google Maps to display it."
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

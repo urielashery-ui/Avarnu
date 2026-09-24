@@ -56,16 +56,17 @@
           "idf", "bereaved", "holocaust", "reservist", "soldier", "oleh", "lowIncome", "student"], "o.") }
       ]},
       { id: "address", fields: [
-        { group: "g.newAddr", fields: [
-          { id: "newStreet", req: true, w: 4, auto: "address-line1" },
-          { id: "newNum", req: true, w: 2, auto: "off" },
+        // קודם עיר, ואז רחוב מתוך הרשימה הרשמית של אותה עיר
+        { group: "g.newAddr", map: "new", fields: [
           { id: "newCity", req: true, w: 4, list: "cities", auto: "address-level2" },
+          { id: "newStreet", req: true, w: 4, list: "st-new", auto: "off", note: true },
+          { id: "newNum", req: true, w: 2, auto: "off" },
           { id: "newApt", w: 2, mode: "numeric" },
-          { id: "zip", w: 3, mode: "numeric", max: 7, auto: "postal-code", ltr: true, check: "zip", hint: "f.zip.h" },
+          { id: "zip", w: 3, mode: "numeric", max: 7, auto: "postal-code", ltr: true, check: "zip", hint: "f.zip.h", link: ["f.zip.find", ZIP_URL] },
           { id: "floor", w: 3, mode: "numeric", max: 3 }
         ]},
-        { group: "g.oldAddr", hint: "g.oldAddr.h", fields: [
-          { id: "oldStreet", w: 4 }, { id: "oldApt", w: 2, mode: "numeric" }, { id: "oldCity", w: 6, list: "cities" }
+        { group: "g.oldAddr", hint: "g.oldAddr.h", map: "old", fields: [
+          { id: "oldCity", w: 4, list: "cities" }, { id: "oldStreet", w: 6, list: "st-old", auto: "off", note: true }, { id: "oldApt", w: 2, mode: "numeric" }
         ]},
         { id: "moveDate", req: true, w: 3, type: "date", check: "date" },
         { id: "landlord", w: 3, hint: "f.landlord.h", showIf: function (d) { return d.tenure === "rent"; } }
@@ -150,7 +151,9 @@
     var hintText = f.hint ? t(f.hint) : "";
     var desc = (hintText ? hintId + " " : "") + errId;
     var reqMark = f.req && f.type !== "consent" ? ' <span class="req">' + esc(t("req")) + "</span>" : "";
-    var hint = hintText ? '<p class="hint" id="' + hintId + '">' + esc(hintText) + "</p>" : "";
+    var hint = hintText ? '<p class="hint" id="' + hintId + '">' + esc(hintText) +
+      (f.link ? ' <a href="' + f.link[1] + '" target="_blank" rel="noopener">' + esc(t(f.link[0])) + ' <span class="sr">' + esc(t("newWin")) + "</span></a>" : "") + "</p>" : "";
+    if (f.note) hint += '<p class="fnote" id="note-' + f.id + '" aria-live="polite"></p>';
     var err = '<p class="ferr" id="' + errId + '" hidden></p>';
     var wrapOpen = '<div class="field ' + w + '" id="wrap-' + f.id + '">';
     if (f.type === "radio" || f.type === "checks") {
@@ -183,7 +186,10 @@
       if (f.group) {
         if (f.showIf) groupShows.push(f);
         return '<fieldset class="group"' + (f.gid ? ' id="grp-' + f.gid + '"' : "") + '><legend>' + esc(t(f.group)) + "</legend>" + (f.hint ? '<p class="hint">' + esc(t(f.hint)) + "</p>" : "") +
-          '<div class="grid">' + f.fields.map(fieldHTML).join("") + "</div></fieldset>";
+          '<div class="grid">' + f.fields.map(fieldHTML).join("") + "</div>" +
+          (f.map ? '<div class="maprow"><button type="button" class="quiet mapbtn" id="mapbtn-' + f.map + '" data-map="' + f.map + '" aria-expanded="false" aria-controls="map-' + f.map + '">' +
+            '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ' + esc(t("addr.map")) +
+            '</button><p class="fnote" id="mapmsg-' + f.map + '" aria-live="polite"></p><div class="mapbox" id="map-' + f.map + '" hidden></div></div>' : "") + "</fieldset>";
       }
       return fieldHTML(f);
     }).join("");
@@ -193,7 +199,8 @@
   function buildForm(keep) {
     STEPS = defineSteps(); LAST = STEPS.length; allFields = []; fieldById = {}; groupShows = [];
     $("steps").innerHTML = STEPS.map(stepHTML).join("") +
-      '<datalist id="cities">' + C.cityList(LANG).map(function (c) { return '<option value="' + esc(c) + '"></option>'; }).join("") + "</datalist>";
+      '<datalist id="cities">' + cityOptions() + "</datalist>" + '<datalist id="st-new"></datalist><datalist id="st-old"></datalist>';
+    stLoaded = { new: null, old: null };
     if (keep) setData(keep);
     else {
       allFields.forEach(function (f) {
@@ -203,6 +210,127 @@
       if ($("xPost")) $("xPost").checked = true;
     }
   }
+
+  // ---------- כתובת: ערים ורחובות מהרשימה הרשמית, מיקוד ומפה ----------
+  var ZIP_URL = "https://israelpost.co.il/%D7%A9%D7%99%D7%A8%D7%95%D7%AA%D7%99%D7%9D/%D7%90%D7%99%D7%AA%D7%95%D7%A8-%D7%9E%D7%99%D7%A7%D7%95%D7%93/";
+  // בגרסת ההדגמה (בלי שרת) יש רק כמה רחובות לדוגמה. באתר עצמו הרשימה המלאה מגיעה מהשרת.
+  var DEMO_STREETS = {
+    "תל אביב": ["אבן גבירול", "אלנבי", "בוגרשוב", "בן יהודה", "דיזנגוף", "הירקון", "הרצל", "ויצמן", "ז'בוטינסקי", "יהודה הלוי", "נמיר", "קינג ג'ורג'", "רוטשילד"],
+    "ירושלים": ["אגריפס", "בית לחם", "בן יהודה", "הנביאים", "הרצל", "יפו", "עזה", "עמק רפאים", "קינג ג'ורג'", "קרן היסוד"],
+    "חיפה": ["אבא חושי", "הגפן", "הנביאים", "הרצל", "חורב", "מוריה"],
+    "פתח תקווה": ["אחד העם", "ז'בוטינסקי", "חיים עוזר", "ילין", "קפלן", "רוטשילד"],
+    "חולון": ["אילת", "גולדה מאיר", "הרצל", "ויצמן", "סוקולוב"]
+  };
+  var govCities = [], stCache = {}, stLoaded = { new: null, old: null }, stTimer = {};
+  // מפתח להשוואה בלבד (לא מוצג): בלי ניקוד וסימנים, וכתיב מלא/חסר נחשב אותו דבר (תקוה = תקווה)
+  function pkey(s) { return String(s || "").replace(/[֑-ׇ]/g, "").replace(/[״"׳'`\-–־().,]/g, " ").replace(/וו/g, "ו").replace(/יי/g, "י").replace(/\s+/g, " ").trim(); }
+  function cityOptions() {
+    var seen = {}, out = [];
+    C.cityList(LANG).concat(govCities).forEach(function (c) { var k = pkey(c); if (c && !seen[k]) { seen[k] = 1; out.push('<option value="' + esc(c) + '"></option>'); } });
+    return out.join("");
+  }
+  function loadCities() {
+    if (!API || govCities.length || loadCities.busy) return;
+    loadCities.busy = true;
+    fetch(API.replace(/\/$/, "") + "/places/cities").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (j && j.cities) { govCities = j.cities; var dl = $("cities"); if (dl) dl.innerHTML = cityOptions(); }
+    }).catch(function () {}).then(function () { loadCities.busy = false; });
+  }
+  function demoStreets(city) {
+    var k = pkey(C.canonCity(city)), hit = null;
+    Object.keys(DEMO_STREETS).forEach(function (c) { var ck = pkey(c); if (ck === k || k.indexOf(ck) === 0) hit = c; });
+    return hit ? { city: hit, streets: DEMO_STREETS[hit] } : null;
+  }
+  function getStreets(city) {
+    var k = pkey(city);
+    if (!k) return Promise.resolve(null);
+    if (k in stCache) return Promise.resolve(stCache[k]);
+    var p = API
+      ? fetch(API.replace(/\/$/, "") + "/places/streets?city=" + encodeURIComponent(city)).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      : Promise.resolve(demoStreets(city));
+    return p.then(function (j) { stCache[k] = j; return j; });
+  }
+  // מרחק עריכה קצר, בשביל "אולי התכוונתם ל..."
+  function lev(a, b) {
+    var m = a.length, n = b.length, d = [], i, j;
+    for (i = 0; i <= m; i++) d[i] = [i];
+    for (j = 1; j <= n; j++) d[0][j] = j;
+    for (i = 1; i <= m; i++) for (j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[m][n];
+  }
+  function streetOnly(v, which) { return which === "old" ? String(v).replace(/[\s,]*\d+\s*[א-תa-z]?\s*$/i, "").trim() : String(v).trim(); }
+  function suggest(v, list) {
+    var k = pkey(v).replace(/^(רחוב|רח|שדרות|שד|דרך)\s+/, "");
+    if (!k) return [];
+    return list.map(function (s) {
+      var sk = pkey(s), core = sk.replace(/^(רחוב|רח|שדרות|שד|דרך)\s+/, ""), score = lev(k, core);
+      if (core.indexOf(k) >= 0 || k.indexOf(core) >= 0) score = Math.min(score, 1);
+      return [score, s];
+    }).filter(function (x) { return x[0] <= Math.max(1, Math.floor(k.length / 3)); })
+      .sort(function (a, b) { return a[0] - b[0] || a[1].length - b[1].length; }).slice(0, 3).map(function (x) { return x[1]; });
+  }
+  // מעדכנים רק אם השתנה — אחרת לחיצה על הצעה (שגורמת ל-blur) מחליפה את הכפתור באמצע הלחיצה
+  // וגם: לא משנים את הדף באמצע נגיעה/לחיצה (למשל על "המשך"), כדי שהכפתור לא יזוז מתחת לאצבע. מחכים שהלחיצה תסתיים.
+  var tapping = false, pendingNotes = {}, pendingFns = [];
+  document.addEventListener("pointerdown", function () { tapping = true; }, true);
+  function endTap() {
+    if (!tapping) return;
+    setTimeout(function () {
+      tapping = false;
+      Object.keys(pendingNotes).forEach(function (id) { var n = pendingNotes[id]; delete pendingNotes[id]; note(id, n[0], n[1]); });
+      pendingFns.splice(0).forEach(function (fn) { fn(); });
+    }, 0);
+  }
+  document.addEventListener("pointerup", endTap, true); document.addEventListener("pointercancel", endTap, true);
+  function afterTap(fn) { if (tapping) pendingFns.push(fn); else fn(); }
+  function note(id, html, cls) {
+    if (tapping) { pendingNotes[id] = [html, cls]; return; }
+    var el = $("note-" + id); if (!el || el._h === html + cls) return; el._h = html + cls; el.className = "fnote" + (cls ? " " + cls : ""); el.innerHTML = html;
+  }
+  function cityChanged(which) {
+    var cityId = which + "City", stId = which + "Street", city = $(cityId) && $(cityId).value.trim();
+    if (!city) { stLoaded[which] = null; $("st-" + which).innerHTML = ""; note(stId, ""); return; }
+    getStreets(city).then(function (j) {
+      if (!$(cityId) || $(cityId).value.trim() !== city) return;
+      stLoaded[which] = j && j.streets && j.streets.length ? j : null;
+      $("st-" + which).innerHTML = stLoaded[which] ? j.streets.map(function (s) { return '<option value="' + esc(s) + '"></option>'; }).join("") : "";
+      if (!stLoaded[which]) { note(stId, ""); return; }
+      if ($(stId).value.trim()) checkStreet(which);
+      else note(stId, esc(t("addr.found", { n: j.streets.length, city: j.city })) + (API ? "" : " " + esc(t("addr.demo"))));
+    });
+  }
+  function checkStreet(which) {
+    var stId = which + "Street", j = stLoaded[which], v = $(stId) && streetOnly($(stId).value, which);
+    if (!j || !v) { if (j && !v) note(stId, esc(t("addr.found", { n: j.streets.length, city: j.city }))); return; }
+    if (!/[א-ת]/.test(v)) { note(stId, ""); return; }   // הרשימה הרשמית בעברית בלבד — לא מזהירים על "Dizengoff"
+    var k = pkey(v), ok = j.streets.some(function (s) { return pkey(s) === k; });
+    if (ok) { note(stId, esc(t("addr.ok")), "ok"); return; }
+    var sug = suggest(v, j.streets);
+    note(stId, esc(t("addr.miss", { s: v, city: j.city })) + " " + (sug.length
+      ? esc(t("addr.maybe")) + " " + sug.map(function (s) { return '<button type="button" class="sugg" data-fill="' + stId + '" data-val="' + esc(s) + '">' + esc(s) + "</button>"; }).join(" ")
+      : esc(t("addr.missNone"))), "warn");
+  }
+  function fillSuggestion(btn) {
+    var id = btn.getAttribute("data-fill"), el = $(id), which = id.indexOf("old") === 0 ? "old" : "new", val = btn.getAttribute("data-val");
+    if (which === "old") { var m = el.value.match(/\s*\d+\s*[א-תa-z]?\s*$/i); val += m ? " " + m[0].trim() : ""; }
+    el.value = val; checkStreet(which); save(); el.focus();
+  }
+  function addrText(which) {
+    var d = data(), street = which === "new" ? [d.newStreet, d.newNum].filter(Boolean).join(" ") : d.oldStreet, city = which === "new" ? d.newCity : d.oldCity;
+    return street && city && (which === "old" || d.newNum) ? street + ", " + city : "";
+  }
+  function toggleMap(which) {
+    var box = $("map-" + which), btn = $("mapbtn-" + which), msg = $("mapmsg-" + which), open = !box.hidden;
+    if (open) { box.hidden = true; box.innerHTML = ""; btn.setAttribute("aria-expanded", "false"); btn.lastChild.textContent = " " + t("addr.map"); return; }
+    var a = addrText(which);
+    if (!a) { msg.textContent = t("addr.mapNeed"); return; }
+    msg.textContent = "";
+    var q = encodeURIComponent(a + ", ישראל"), hl = LANG === "he" ? "iw" : LANG;
+    box.innerHTML = '<iframe title="' + esc(t("addr.mapTitle", { a: a })) + '" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=' + q + "&hl=" + hl + '&z=16&output=embed"></iframe>' +
+      '<p class="fnote">' + esc(t("addr.mapNote")) + ' <a href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(t("addr.mapOpen")) + ' <span class="sr">' + esc(t("newWin")) + "</span></a></p>";
+    box.hidden = false; btn.setAttribute("aria-expanded", "true"); btn.lastChild.textContent = " " + t("addr.mapHide");
+  }
+  function refreshMap(which) { var box = $("map-" + which); if (box && !box.hidden) { toggleMap(which); toggleMap(which); } }
 
   // ---------- נתונים ----------
   function data() {
@@ -325,6 +453,8 @@
       $("next").textContent = n < STEPS.length - 1 ? t("nav.next") : (API ? t("nav.send") : t("nav.finish"));
     }
     applyShowIf();
+    // בשלב הכתובת: אם כבר יש עיר (למשל חזרתם לאתר), טוענים את הרחובות שלה
+    if (!res && STEPS[n] && STEPS[n].id === "address") ["new", "old"].forEach(function (w) { if ($(w + "City") && $(w + "City").value.trim() && !stLoaded[w]) cityChanged(w); });
     hit(res ? "results" : "step:" + n);
     if (res) render();
     updateLabel(); save();
@@ -818,11 +948,25 @@
     if (f && $(f.id + "-err") && !$(f.id + "-err").hidden) setErr(f, "");
     if (C.KIT.indexOf(e.target.id) >= 0) kitTouched = true;
     applyShowIf(); updateLabel(); save();
+    // בדיקת הרחוב תוך כדי הקלדה (חצי שנייה אחרי שעוצרים), כדי שההודעה תופיע לפני שממשיכים
+    if (e.target.id === "newStreet" || e.target.id === "oldStreet") {
+      var w = e.target.id.slice(0, 3); clearTimeout(stTimer[w]); stTimer[w] = setTimeout(function () { checkStreet(w); }, 500);
+    }
   });
   $("f").addEventListener("change", function (e) {
     if (e.target.id === "rooms" || e.target.name === "supplies") fillKit();
+    if (e.target.id === "newCity" || e.target.id === "oldCity") cityChanged(e.target.id.slice(0, 3));
+    if (e.target.id === "newStreet" || e.target.id === "oldStreet") checkStreet(e.target.id.slice(0, 3));
+    if (/^(new(City|Street|Num)|old(City|Street))$/.test(e.target.id)) { var w = e.target.id.slice(0, 3); afterTap(function () { refreshMap(w); }); }
     applyShowIf(); save();
   });
+  $("f").addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("button");
+    if (!b) return;
+    if (b.hasAttribute("data-map")) toggleMap(b.getAttribute("data-map"));
+    else if (b.hasAttribute("data-fill")) fillSuggestion(b);
+  });
+  $("f").addEventListener("focusin", function (e) { if (e.target.id === "newCity" || e.target.id === "oldCity") loadCities(); });
   $("langSel").addEventListener("change", function (e) { setLang(e.target.value, true); });
 
   var armed = false;

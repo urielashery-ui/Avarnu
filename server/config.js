@@ -54,6 +54,8 @@ export function loadConfig(overrides = {}) {
     port: Number(e.PORT || 3000),
     publicUrl: (e.PUBLIC_URL || "http://localhost:" + (e.PORT || 3000)).replace(/\/$/, ""),
     dbPath: e.DB_PATH || "data/movers.db",
+    placesOnline: e.PLACES_ONLINE ? e.PLACES_ONLINE !== "false" : e.NODE_ENV !== "test",  // הורדת רשימת הרחובות מ-data.gov.il
+    placesCsv: e.PLACES_CSV || "",
     dataKey,
     adminUser: e.ADMIN_USER || "admin",
     adminPass: e.ADMIN_PASS || "admin-dev-only",

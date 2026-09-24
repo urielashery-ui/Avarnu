@@ -14,6 +14,7 @@ import { getPaymentProvider, priceFor } from "./payments/index.js";
 import { moversApi, publicMoversRouter, sitePage } from "./movers.js";
 import { sendMail, reviewRequestEmail } from "./connectors/email.js";
 import { laterRouter, runReminders } from "./later.js";
+import { createPlaces } from "./places.js";
 import { randomBytes } from "node:crypto";
 
 const HIT_KEYS = /^(step:[0-9]|results|submit|paid|video|go)$/;
@@ -37,6 +38,7 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
         "img-src": ["'self'", "data:"],
         "connect-src": ["'self'", "https://fonts.googleapis.com"],
         "form-action": ["'self'"],
+        "frame-src": ["https://maps.google.com", "https://www.google.com"],   // המפה נטענת רק כשלוחצים "הצגה במפה"
         "frame-ancestors": ["'none'"]
       }
     },
@@ -44,7 +46,14 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
     referrerPolicy: { policy: "strict-origin-when-cross-origin" }
   }));
 
-  app.get("/healthz", (req, res) => res.json({ ok: true }));
+  // ערים ורחובות (רשימה רשמית) — להשלמה אוטומטית בטופס
+  const places = createPlaces(cfg);
+  places.start();
+  app.use("/api/places", rateLimit({ windowMs: 60 * 1000, limit: 60, standardHeaders: "draft-7", legacyHeaders: false }));
+  app.use(places.router());
+  app.locals.places = places;
+
+  app.get("/healthz", (req, res) => { const p = places.status(); res.json({ ok: true, streets: p.ready ? p.source + " · " + p.cities + " ישובים" : "לא זמין" + (p.error ? " (" + p.error + ")" : "") }); });
 
   // הגדרות לדפדפן — נקבעות ממשתני הסביבה, בלי לבנות מחדש
   app.get("/config.js", (req, res) => {
