@@ -98,7 +98,7 @@ export function adminRouter({ db, crypt, cfg }) {
     if (!d) return res.status(500).send(page("שגיאה", "<h1>לא הצלחנו לפענח את הפנייה</h1><p>בדקו שה-DATA_KEY לא השתנה.</p>"));
     const reveal = req.query.reveal === "1";
     if (reveal) db.event(row.id, "admin:reveal-tz", req.ip);
-    const tz = reveal ? d.tz : "*****" + String(d.tz).slice(-4);
+    const tz = !d.tz ? "— (לא נמסר)" : reveal ? d.tz : "*****" + String(d.tz).slice(-4);
     const info = [["שם", d.firstName + " " + d.lastName],
       ["תעודת זהות", `${esc(tz)} ${reveal ? "" : `<a href="?reveal=1">הצגה מלאה (נרשם ביומן)</a>`}`, true],
       ["טלפון", d.phone], ["מייל", d.email], ["שפה מועדפת", d.lang && d.lang !== "he" ? C.LANG_NAMES_HE[d.lang] : ""], ["אנשים בבית", d.people], ["בדירה החדשה", d.tenure === "rent" ? "שוכרים" + (d.landlord ? " מ" + d.landlord : "") : "בעלים"],
@@ -219,7 +219,9 @@ export function adminRouter({ db, crypt, cfg }) {
     }
     const paid = rows.filter((r) => r.paid_at), revenue = paid.reduce((s, r) => s + (r.amount || 0), 0);
     const table = (title, pairs, unit = "") => `<section class="card"><h2>${esc(title)}</h2>${pairs.length ? `<div class="t"><table class="narrow"><tbody>${pairs.map(([k, v]) => `<tr><th scope="row">${esc(k)}</th><td class="n">${esc(v)}${unit}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">אין עדיין נתונים.</p>`}</section>`;
-    const funnel = ["step:0", "step:1", "step:2", "step:3", "step:4", "step:5", "results"].map((k) => [k === "results" ? "הגיעו לרשימה" : "שלב " + (Number(k.slice(5)) + 1), c["view:" + k] || 0]).filter(([, v], i) => v || i < 5);
+    // step:0 נספר כשהדף נטען (כלומר: נכנסו לאתר). "start" = התחילו להקליד. step:N = עברו לשלב N+1.
+    const fname = (k) => k === "step:0" ? "נכנסו לאתר" : k === "start" ? "התחילו למלא" : k === "results" ? "הגיעו לרשימה" : "עברו לשלב " + (Number(k.slice(5)) + 1);
+    const funnel = ["step:0", "start", "step:1", "step:2", "step:3", "step:4", "step:5", "step:6", "results"].map((k) => [fname(k), c["view:" + k] || 0]).filter(([, v], i) => v || i < 4);
     const clicks = Object.entries(c).filter(([k]) => k.startsWith("click:")).map(([k, v]) => [k.slice(6), v]).sort((a, b) => b[1] - a[1]);
     const tiles = [["פניות", rows.length], ["שירות מלא", rows.filter((r) => r.service === "concierge").length], ["הסכימו לדיוור", rows.filter((r) => r.marketing).length],
       ["קליקים על שותפים", clicks.reduce((s, x) => s + x[1], 0)], ["צפו בסרטון", c["view:video"] || 0], ["בקשות לשיחה עם נציג", c["callback"] || 0]].concat(cfg.payments.enabled ? [["הכנסות (₪)", revenue]] : []);

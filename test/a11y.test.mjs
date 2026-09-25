@@ -31,10 +31,17 @@ async function bookCall(page, all, label) {
   await page.waitForFunction(() => !document.getElementById("toast").classList.contains("show"), null, { timeout: 6000 }); await page.waitForTimeout(300);
 }
 
-async function fillAll(page) {
+// הסדר החדש: קודם כתובת ותאריך (קל), ורק בסוף פרטים אישיים
+async function fillAddress(page) {
+  await page.fill("#newCity", "פתח תקווה"); await page.fill("#newStreet", "הרצל"); await page.fill("#newNum", "10");
+  const d = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
+  await page.fill("#moveDate", d);
+  await page.click("details.moref summary");   // הכתובת הישנה — בחלק המקופל
+  await page.fill("#oldCity", "פתח תקווה"); await page.fill("#oldStreet", "ילין 5");
+}
+async function fillPersonal(page) {
   await page.fill("#firstName", "נועה");
   await page.fill("#lastName", "לוי");
-  await page.fill("#tz", "123456782");
   await page.fill("#phone", "050-1234567");
   await page.fill("#email", "noa@example.com");
 }
@@ -74,10 +81,11 @@ for (const [lang, scheme] of RUNS) {
     await page.click("#next");
     assert.equal(await page.isVisible("#errsum"), true, "סיכום שגיאות מוצג");
     assert.equal(await page.evaluate(() => document.activeElement.id), "errsum", "הפוקוס עובר לסיכום השגיאות");
-    assert.equal(await page.getAttribute("#firstName", "aria-invalid"), "true");
+    assert.equal(await page.getAttribute("#newCity", "aria-invalid"), "true");
+    assert.equal(await page.isVisible("#firstName"), false, "בשלב הראשון לא מבקשים שם");
     all.push(...await scan(page, "שלב 1 עם שגיאות"));
 
-    await fillAll(page);
+    await fillAddress(page);
     await page.click("#next");
     assert.equal(await page.evaluate(() => document.activeElement.id), "h-1", "הפוקוס עובר לכותרת השלב");
     // יוצאים וחוזרים: ממשיכים מאותו שלב, בלי להתחיל מחדש
@@ -87,17 +95,11 @@ for (const [lang, scheme] of RUNS) {
     assert.equal(await page.isVisible("#welcome"), true, "הודעת 'ממשיכים מאיפה שעצרתם'");
     assert.equal(await page.inputValue("#people"), "4", "מה שמילאו נשמר");
     all.push(...await scan(page, "חזרה לאתר"));
-    await page.click("#back"); await page.fill("#tz", "123456782"); await page.click("#next");
+    await page.click("#back"); await page.click("#next");
     assert.equal(await page.isVisible("#welcome"), false);
     all.push(...await scan(page, "שלב משק בית"));
     await page.fill("#people", "4"); await page.fill("#kidsCount", "2");
     await page.check("#kidsUnder3"); await page.check("#singleParent"); await page.check("#reservist");
-    await page.click("#next");
-    all.push(...await scan(page, "שלב כתובות"));
-    await page.fill("#newStreet", "הרצל"); await page.fill("#newNum", "10"); await page.fill("#newCity", "פתח תקווה");
-    const d = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
-    await page.fill("#moveDate", d);
-    await page.fill("#oldStreet", "ילין 5"); await page.fill("#oldCity", "פתח תקווה");
     await page.click("#next");
     if (await page.isVisible("#moveStatus-quotes")) {
       all.push(...await scan(page, "שלב הובלה"));
@@ -136,8 +138,19 @@ for (const [lang, scheme] of RUNS) {
     await page.selectOption("#isp", "בזק"); await page.selectOption("#hmo", "מכבי"); await page.check("#xCar");
     all.push(...await scan(page, "שלב 4"));
     await page.click("#next");
+    // פרטים אישיים — רק בסוף
+    all.push(...await scan(page, "שלב פרטים אישיים"));
+    await page.click("#next");
+    assert.equal(await page.getAttribute("#firstName", "aria-invalid"), "true", "שם חובה");
+    await fillPersonal(page);
+    await page.click("#next");
     if (await page.isVisible("#service-self")) { // מצב אתר אמיתי: שלב שליחה
       all.push(...await scan(page, "שלב שליחה"));
+      assert.equal(await page.isVisible("#tz"), false, "עדכון עצמי: לא מבקשים תעודת זהות");
+      await page.check("#service-concierge");
+      assert.equal(await page.isVisible("#tz"), true, "\"תעדכנו בשבילי\": מבקשים תעודת זהות");
+      all.push(...await scan(page, "שלב שליחה, שירות מלא"));
+      await page.check("#service-self");
       await page.click("#next");
       assert.equal(await page.isVisible("#consent-err"), true, "חובה לסמן הסכמה");
       await page.check("#consent");

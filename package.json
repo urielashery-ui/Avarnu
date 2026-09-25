@@ -9,7 +9,7 @@
     "build": "node build.mjs",
     "start": "node build.mjs && node --disable-warning=ExperimentalWarning server/index.js",
     "dev": "node build.mjs && node --watch server/index.js",
-    "test": "node build.mjs && node --test test/api.test.mjs test/business.test.mjs test/movers.test.mjs test/supplies.test.mjs test/later.test.mjs test/callbacks.test.mjs test/i18n.test.mjs test/i18n-server.test.mjs test/places.test.mjs",
+    "test": "node --check src/app.js && node --check src/catalog.js && node build.mjs && node --test test/api.test.mjs test/business.test.mjs test/movers.test.mjs test/supplies.test.mjs test/later.test.mjs test/callbacks.test.mjs test/i18n.test.mjs test/i18n-server.test.mjs test/places.test.mjs test/tz.test.mjs",
     "test:a11y": "node build.mjs && node --test test/a11y.test.mjs",
     "keygen": "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
   },

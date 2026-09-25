@@ -22,7 +22,7 @@ const ENUMS = {
   mobile: ["", "פלאפון", "סלקום", "פרטנר", "הוט מובייל", "גולן טלקום", "אחר"], hmo: ["", "כללית", "מכבי", "מאוחדת", "לאומית"]
 };
 const REQUIRED = {
-  firstName: "חסר שם פרטי", lastName: "חסר שם משפחה", tz: "חסר מספר תעודת זהות", phone: "חסר מספר טלפון",
+  firstName: "חסר שם פרטי", lastName: "חסר שם משפחה", phone: "חסר מספר טלפון",
   newStreet: "חסר רחוב חדש", newNum: "חסר מספר בית", newCity: "חסרה עיר חדשה", moveDate: "חסר תאריך מעבר",
   tenure: "חסר סוג מגורים", service: "חסרה בחירת שירות"
 };
@@ -67,8 +67,10 @@ export function validateLead(input) {
   for (const k of ["people", "kidsCount", "oldFloor", "floor"]) if (lead[k] && !/^\d{1,2}$/.test(lead[k])) errors[k] = "מספר לא תקין";
   if (!lead.consent) errors.consent = "חסרה הסכמה לשמירת הפרטים";
   if (lead.service === "concierge" && !lead.poa) errors.poa = "חסרה הסכמה לפנייה בשמכם";
+  // תעודת זהות: רק למי שביקש שנעדכן בשבילו (הגופים מבקשים אותה). מי שמעדכן לבד — לא צריך למסור.
+  if (lead.service === "concierge" && !lead.tz) errors.tz = "חסר מספר תעודת זהות";
   if (lead.service === "self" && !lead.email) errors.email = "כדי שנשלח לכם את הרשימה, צריך מייל";
-  lead.tz = C.digits(lead.tz).padStart(9, "0");
+  lead.tz = lead.tz ? C.digits(lead.tz).padStart(9, "0") : "";
   lead.lang = lead.lang || "he";
   // עיר בכל שפה (Haifa / Хайфа / حيفا) נשמרת בשם הקנוני בעברית — בשביל התאמת מובילים וקישורים
   lead.newCity = C.canonCity(lead.newCity); lead.oldCity = C.canonCity(lead.oldCity);

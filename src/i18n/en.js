@@ -27,7 +27,7 @@
     "step.of": "Step {n} of {total}:",
     "req": "(required)", "optional": "(optional)", "none": "None / not sure", "choose": "Choose",
 
-    "s.personal.name": "Personal details", "s.personal.h": "Who is moving?", "s.personal.lead": "The details of the person whose name the bills will be in.",
+    "s.personal.name": "Personal details", "s.personal.h": "Almost done. Whose name are the bills in?", "s.personal.lead": "Your name and phone go into the texts we prepare, and your email is where we send your list.",
     "s.household.name": "Household and discounts", "s.household.h": "Who lives with you, and which discounts can you get?",
     "s.household.lead": "None of these questions are required. We only ask so we can find you discounts on arnona, electricity, water and more. Many people don't know they are entitled to a discount.",
     "s.address.name": "Addresses and date", "s.address.h": "Where from, where to?", "s.address.lead": "Write your new address exactly as it will appear on your ID card.",
@@ -145,7 +145,7 @@
     "dlg.pr.modeApi": "The details you send are stored securely, and only our service team can see them.",
     "dlg.pr.modeLocal": "In this version, your details aren't sent anywhere. They are saved only in your browser, and your ID number isn't saved at all.",
     "dlg.pr.h1": "What we ask for and why",
-    "dlg.pr.l1": "Name, ID number, phone and email: to prepare texts that offices will accept.", "dlg.pr.l2": "Addresses and moving date: to know who to update and when.",
+    "dlg.pr.l1": "Name, phone and email: to prepare your texts and send you the list. ID number: only if you asked us to update for you.", "dlg.pr.l2": "Addresses and moving date: to know who to update and when.",
     "dlg.pr.l3": "Meter numbers: for the electric company and the water corporation.", "dlg.pr.l4": "Household details (children, allowances, reserve duty etc.): only to find you discounts. Optional.",
     "dlg.pr.l5": "If you asked for moving quotes: we share your name, phone, date, cities and home details with up to 3 movers. Only after you agree. Your ID number is never shared.",
     "dlg.pr.h2": "What we do with your details",
@@ -495,6 +495,29 @@
     "addr.missNone": "Check the spelling. If it's a new street, you can continue.",
     "addr.demo": "This demo has only a few sample streets. The live site has the full list.",
     "f.zip.find": "Find it at Israel Post",
-    "dlg.pr.l6": "Map: only if you click \"Show on map\", the address is sent to Google Maps to display it."
+    "dlg.pr.l6": "Map: only if you click \"Show on map\", the address is sent to Google Maps to display it.",
+    // ===== כרטיס המוצר בראש הדף =====
+    "nav.start": "Get started",
+    "pc.title": "Your list",
+    "pc.tag": "Example",
+    "pc.prog": "4 of 6 already sorted",
+    "pc.where": "Moving to your new home · in 12 days",
+    "pc.r1": "Population Authority",
+    "pc.r2": "Electric company",
+    "pc.r3": "Water utility",
+    "pc.r4": "Arnona (city tax)",
+    "pc.r5": "Bank",
+    "pc.r6": "Health fund",
+    "pc.done": "Updated",
+    "pc.disc": "Discount found",
+    "pc.wait": "Text ready",
+    "eb.svc": "What we do",
+    "eb.why": "Why Avarnu",
+    "eb.about": "Our story",
+    "eb.faq": "Questions",
+    "foot.tag": "Fill in once and get everything you need to do.",
+    "f.tz.hOpt": "Optional. If you add it, it goes into the ready-made texts. Not saved on your device.",
+    "f.tz.hConc": "Only because you asked us to update for you: offices require it. Stored encrypted.",
+    "more.addr": "More details: current address, zip code and floor (optional)"
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

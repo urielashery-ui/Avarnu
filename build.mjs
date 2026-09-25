@@ -49,7 +49,7 @@ const page = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="${DESC}">
-<meta name="theme-color" content="#0D4735">
+<meta name="theme-color" content="#0A2463">
 <title>${title}</title>
 <link rel="canonical" href="${SITE}/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -93,7 +93,7 @@ out("config.js", '// הכתובת של ה-API. להשאיר "/api" כשהאתר 
 // תמונת שיתוף (וואטסאפ/פייסבוק) ואייקון למסך הבית
 for (const f of ["og.jpg", "icon-180.png", "city.webp", "city-m.webp"]) copyFileSync(new URL("./src/assets/" + f, import.meta.url), new URL("./public/" + f, import.meta.url));
 // אייקון, robots.txt ומפת אתר
-out("favicon.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="9" fill="#0D4735"/><rect x="5" y="17" width="19" height="15" rx="2.5" fill="#FFC23D"/><path d="M19 18l8-7 8 7v12a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2z" fill="#fff"/><rect x="24.5" y="24" width="5" height="8" rx="1" fill="#0D4735"/></svg>\n`);
+out("favicon.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect width="40" height="40" rx="9" fill="#0A2463"/><rect x="5" y="17" width="19" height="15" rx="2.5" fill="#FFC23D"/><path d="M19 18l8-7 8 7v12a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2z" fill="#fff"/><rect x="24.5" y="24" width="5" height="8" rx="1" fill="#0A2463"/></svg>\n`);
 out("robots.txt", `User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /m/\nDisallow: /r/\nDisallow: /go/\nSitemap: ${SITE}/sitemap.xml\n`);
 out("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
   ["/", "/en", "/ru", "/ar"].map((p) => `  <url><loc>${SITE}${p}</loc>` + [["he", "/"], ["en", "/en"], ["ru", "/ru"], ["ar", "/ar"]].map(([l, q]) => `<xhtml:link rel="alternate" hreflang="${l}" href="${SITE}${q}"/>`).join("") + `</url>`).join("\n") + `\n</urlset>\n`);

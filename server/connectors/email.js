@@ -26,7 +26,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const shell = (title, inner, lang = "he") => {
   const rtl = !!C.RTL[lang], dir = rtl ? "rtl" : "ltr", align = rtl ? "right" : "left";
   return `<!doctype html><html lang="${lang}" dir="${dir}"><head><meta charset="utf-8"><title>${esc(title)}</title></head>
-<body style="margin:0;background:#F6F8FC;font-family:Arial,sans-serif;color:#13261E;direction:${dir};text-align:${align}">
+<body style="margin:0;background:#F6F8FC;font-family:Arial,sans-serif;color:#0F1B33;direction:${dir};text-align:${align}">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px;font-size:16px;line-height:1.6">${inner}
 <p style="color:#4D5A75;font-size:13px;margin-top:32px">${esc(C.T(lang, "email.footer"))}</p></div></body></html>`;
 };
@@ -35,7 +35,7 @@ function benefitsHtml(lead, lang) {
   const T = (k, v) => C.T(lang, k, v);
   const list = C.benefits(lead, { hideId: true, lang });
   if (!list.length) return "";
-  return `<div style="background:#FFF3D1;color:#13261E;border-radius:16px;padding:16px;margin:20px 0 8px">
+  return `<div style="background:#FFF3D1;color:#0F1B33;border-radius:16px;padding:16px;margin:20px 0 8px">
     <h2 style="font-size:21px;margin:0 0 4px">${esc(T("email.benTitle", { n: list.length }))}</h2>
     <p style="margin:0">${esc(T("email.benNote"))}</p></div>` + list.map((b) => `
     <div style="background:#fff;border:1px solid #D6DEEC;border-radius:10px;padding:14px;margin-bottom:10px">
@@ -43,16 +43,16 @@ function benefitsHtml(lead, lang) {
       <p style="margin:6px 0">${esc(T(b.sure === "likely" ? "ben.likely" : "ben.check"))} ${esc(b.d)}</p>
       ${b.how ? `<p style="margin:6px 0"><strong>${esc(T("email.how"))}</strong> ${esc(b.how)}</p>` : ""}
       ${b.docs.length ? `<p style="margin:6px 0"><strong>${esc(T("email.docs"))}</strong> ${b.docs.map(esc).join(" · ")}</p>` : ""}
-      ${b.url ? `<a href="${esc(b.url)}" style="color:#12704E;font-weight:bold">${esc(b.search ? T("ben.searchForm") : T("item.visit", { site: b.site || "" }))}</a>` : ""}
+      ${b.url ? `<a href="${esc(b.url)}" style="color:#1452CC;font-weight:bold">${esc(b.search ? T("ben.searchForm") : T("item.visit", { site: b.site || "" }))}</a>` : ""}
     </div>`).join("");
 }
 
 function moversHtml(movers, lang) {
   if (!movers || !movers.length) return "";
-  return `<div style="background:#E3F2EA;border-radius:16px;padding:16px;margin:20px 0 8px">
+  return `<div style="background:#E6EEFF;border-radius:16px;padding:16px;margin:20px 0 8px">
     <h2 style="font-size:21px;margin:0 0 6px">${esc(C.T(lang, "email.mvTitle", { n: movers.length }))}</h2>
     <p style="margin:0 0 8px">${esc(C.T(lang, "email.mvP"))}</p>
-    ${movers.map((m) => `<p style="margin:4px 0"><strong>${esc(m.name)}</strong> · <a href="tel:${esc(C.digits(m.phone))}" style="color:#12704E" dir="ltr">${esc(m.phone)}</a></p>`).join("")}</div>`;
+    ${movers.map((m) => `<p style="margin:4px 0"><strong>${esc(m.name)}</strong> · <a href="tel:${esc(C.digits(m.phone))}" style="color:#1452CC" dir="ltr">${esc(m.phone)}</a></p>`).join("")}</div>`;
 }
 
 function suppliesHtml(lead, lang) {
@@ -60,7 +60,7 @@ function suppliesHtml(lead, lang) {
   const T = (k, v) => C.T(lang, k, v), from = lead.suppliesFrom;
   const msg = from === "movers" ? T("sup.movers") : from === "delivery"
     ? T("sup.ordered", { date: C.fmtDate(lead.suppliesDate), addr: C.addrL(lead, lead.suppliesTo === "new" ? "new" : "old", lang) }) : T("sup.self");
-  return `<div style="background:#E3F2EA;border-radius:16px;padding:16px;margin:20px 0 8px">
+  return `<div style="background:#E6EEFF;border-radius:16px;padding:16px;margin:20px 0 8px">
     <h2 style="font-size:21px;margin:0 0 6px">${esc(T("email.supTitle"))}</h2><p style="margin:0 0 8px">${esc(msg)}</p>
     ${C.kitLines(lead, lang).map((x) => `<p style="margin:2px 0">• ${esc(x.name)}: <strong>${x.qty}</strong></p>`).join("")}</div>`;
 }
@@ -82,7 +82,7 @@ export function supplierOrderEmail(lead, ref) {
       <table role="presentation" style="border-collapse:collapse;width:100%;background:#fff;border-radius:10px">${rows.map(([k, v]) => `<tr><th style="${th}">${esc(k)}</th><td style="padding:6px 10px">${esc(v)}</td></tr>`).join("")}</table>
       <h2 style="font-size:19px;margin:18px 0 6px">מה להביא</h2>
       <table role="presentation" style="border-collapse:collapse;width:100%;background:#fff;border-radius:10px">${lines.map((x) => `<tr><th style="${th}">${esc(x.name)}</th><td style="padding:6px 10px"><strong>${x.qty}</strong></td></tr>`).join("")}</table>
-      <p style="margin:18px 0"><a href="${esc(wa)}" style="background:#12704E;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">שליחת וואטסאפ ללקוח</a></p>
+      <p style="margin:18px 0"><a href="${esc(wa)}" style="background:#1452CC;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">שליחת וואטסאפ ללקוח</a></p>
       <p style="font-size:13px;color:#4D5A75">הלקוח מחכה לשיחה לאישור מחיר ומועד. התשלום ישירות מול הלקוח, במסירה. הלקוח הסכים שנעביר לכם את הפרטים האלה.</p>`),
     text: `הזמנת קרטונים ${ref}: ${lead.firstName} ${lead.lastName}, ${lead.phone}\n` + rows.map(([k, v]) => k + ": " + v).join("\n") + "\n" + lines.map((x) => x.name + ": " + x.qty).join("\n")
   };
@@ -97,7 +97,7 @@ function laterHtml(lead, lang, url) {
   return `<div style="background:#FFF3CC;border-radius:16px;padding:16px;margin:20px 0 8px">
     <p style="margin:0 0 6px"><strong>${esc(T("email.laterLink", { n: miss.length }))}</strong></p>
     <p style="margin:0 0 12px">${miss.map((k) => esc(labels[k])).join(" · ")}</p>
-    <a href="${esc(url)}" style="background:#12704E;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("email.laterBtn"))}</a></div>`;
+    <a href="${esc(url)}" style="background:#1452CC;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("email.laterBtn"))}</a></div>`;
 }
 
 // התראה לעסק על בקשה לתיאום שיחה. בלי פרטים אישיים — הם במסך הניהול.
@@ -107,7 +107,7 @@ export function callbackNotifyEmail(ref, title, day, slot, cfg) {
     html: shell("בקשה לתיאום שיחה", `<h1 style="font-size:22px">בקשה לתיאום שיחה (${esc(ref)})</h1>
       <p>הלקוח מבקש שנמתין בשבילו על הקו של <strong>${esc(title)}</strong>, ונחבר אותו כשעונים.</p>
       <p>מתי: <strong>${esc(C.fmtDate(day))}, בין ${esc(slot.replace("-", ":00 ל-"))}:00</strong></p>
-      <p><a href="${esc(cfg.publicUrl)}/admin/callbacks" style="color:#12704E;font-weight:bold">לכל השיחות לתיאום</a></p>`),
+      <p><a href="${esc(cfg.publicUrl)}/admin/callbacks" style="color:#1452CC;font-weight:bold">לכל השיחות לתיאום</a></p>`),
     text: `לתאם שיחה: ${title}, ${C.fmtDate(day)} ${slot}. ${cfg.publicUrl}/admin/callbacks`
   };
 }
@@ -119,8 +119,8 @@ export function reminderEmail(lead, url, miss, kind) {
     subject: T(kind === "keyDay" ? "rem.subject2" : "rem.subject1"),
     html: shell(T("u.title"), `<h1 style="font-size:22px;margin:0 0 8px">${esc(T("rem.h1", { name: lead.firstName }))}</h1>
       <p>${esc(intro)}</p><ul>${miss.map((k) => `<li>${esc(labels[k])}</li>`).join("")}</ul>
-      <p style="margin:18px 0"><a href="${esc(url)}" style="background:#12704E;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("rem.btn"))}</a></p>
-      <p style="font-size:13px;color:#4D5A75">${esc(T("rem.stop"))} <a href="${esc(url)}" style="color:#12704E">${esc(url)}</a></p>`, lang),
+      <p style="margin:18px 0"><a href="${esc(url)}" style="background:#1452CC;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("rem.btn"))}</a></p>
+      <p style="font-size:13px;color:#4D5A75">${esc(T("rem.stop"))} <a href="${esc(url)}" style="color:#1452CC">${esc(url)}</a></p>`, lang),
     text: intro + "\n" + miss.map((k) => "• " + labels[k]).join("\n") + "\n" + url
   };
 }
@@ -135,7 +135,7 @@ export function customerChecklistEmail(lead, ref, cfg, movers, editUrl) {
       <div style="background:#fff;border:1px solid #D6DEEC;border-radius:10px;padding:14px;margin-bottom:10px">
         <strong>${esc(i.t)}</strong> <span style="font-size:13px;color:#4D5A75">(${esc(i.auto ? T("item.auto") : i.when)})</span>
         <p style="margin:6px 0">${esc(i.d)}</p>
-        ${i.url ? `<a href="${esc(i.url)}" style="color:#12704E;font-weight:bold">${esc(i.search ? T("item.search") : T("item.visit", { site: i.site || "" }))}</a>` : ""}
+        ${i.url ? `<a href="${esc(i.url)}" style="color:#1452CC;font-weight:bold">${esc(i.search ? T("item.search") : T("item.visit", { site: i.site || "" }))}</a>` : ""}
       </div>`).join("");
   }).join("");
   const heNote = lang !== "he" ? `<p style="background:#FFF3CC;border-radius:10px;padding:10px 12px">${esc(T("email.heNote"))}</p>` : "";
@@ -158,7 +158,7 @@ export function businessNotifyEmail(lead, ref, cfg) {
     subject: `פנייה חדשה ${ref}: ${kind}`,
     html: shell("פנייה חדשה", `<h1 style="font-size:22px">פנייה חדשה: ${esc(ref)}</h1>
       <p>${esc(kind)}. עיר: ${esc(lead.newCity)}. תאריך מעבר: ${esc(C.fmtDate(lead.moveDate))}. ${lead.checklist.length} גופים, ${lead.benefits.length} הנחות לבדוק.</p>${sup}
-      <p><a href="${esc(cfg.publicUrl)}/admin/leads/${esc(ref)}" style="color:#12704E;font-weight:bold">לפרטים במסך הניהול</a></p>
+      <p><a href="${esc(cfg.publicUrl)}/admin/leads/${esc(ref)}" style="color:#1452CC;font-weight:bold">לפרטים במסך הניהול</a></p>
       <p style="font-size:13px;color:#4D5A75">מטעמי פרטיות, הפרטים האישיים לא נשלחים במייל.</p>`),
     text: `פנייה חדשה ${ref} — ${kind}. ${cfg.publicUrl}/admin/leads/${ref}`
   };
@@ -171,10 +171,10 @@ export function moverLeadEmail(lead, mover, tokenUrl) {
   return {
     subject: `בקשת הובלה חדשה מעברנו: ${lead.oldCity || "?"} ← ${lead.newCity}, ${C.fmtDate(lead.moveDate)}`,
     html: shell("בקשת הובלה", `<h1 style="font-size:22px;margin:0 0 8px">שלום ${esc(mover.contact || mover.name)}, יש לכם בקשת הובלה חדשה</h1>
-      <p><strong>${esc(lead.firstName + " " + lead.lastName)}</strong> · <a href="tel:${esc(C.digits(lead.phone))}" style="color:#12704E">${esc(lead.phone)}</a></p>
+      <p><strong>${esc(lead.firstName + " " + lead.lastName)}</strong> · <a href="tel:${esc(C.digits(lead.phone))}" style="color:#1452CC">${esc(lead.phone)}</a></p>
       <table role="presentation" style="border-collapse:collapse;width:100%;background:#fff;border-radius:10px">${rows.map(([k, v]) => `<tr><th style="text-align:right;padding:6px 10px;color:#4D5A75;font-weight:normal;vertical-align:top">${esc(k)}</th><td style="padding:6px 10px">${esc(v)}</td></tr>`).join("")}</table>
-      <p style="margin:18px 0"><a href="${esc(wa)}" style="background:#12704E;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">שליחת וואטסאפ ללקוח</a></p>
-      <p>אחרי שיצרתם קשר, עדכנו כאן בלחיצה אחת: <a href="${esc(tokenUrl)}" style="color:#12704E;font-weight:bold">עדכון מצב הבקשה</a></p>
+      <p style="margin:18px 0"><a href="${esc(wa)}" style="background:#1452CC;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">שליחת וואטסאפ ללקוח</a></p>
+      <p>אחרי שיצרתם קשר, עדכנו כאן בלחיצה אחת: <a href="${esc(tokenUrl)}" style="color:#1452CC;font-weight:bold">עדכון מצב הבקשה</a></p>
       <p style="font-size:13px;color:#4D5A75">הלקוח ביקש הצעות מחיר והסכים שנעביר לכם את הפרטים האלה. הבקשה נשלחה לעד 3 מובילים. בבקשה חזרו אליו תוך יום עבודה.</p>`),
     text: `בקשת הובלה: ${lead.firstName} ${lead.lastName}, ${lead.phone}\n` + rows.map(([k, v]) => k + ": " + v).join("\n") + "\nעדכון: " + tokenUrl
   };
@@ -186,7 +186,7 @@ export function reviewRequestEmail(lead, url) {
     subject: T("rev.subject"),
     html: shell(T("rev.pageT"), `<h1 style="font-size:22px;margin:0 0 8px">${esc(T("rev.h1", { name: lead.firstName }))}</h1>
       <p>${esc(T("rev.p"))}</p>
-      <p style="margin:18px 0"><a href="${esc(url)}" style="background:#12704E;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("rev.btn"))}</a></p>`, lang),
+      <p style="margin:18px 0"><a href="${esc(url)}" style="background:#1452CC;color:#fff;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:bold">${esc(T("rev.btn"))}</a></p>`, lang),
     text: T("rev.pageT") + " " + url
   };
 }

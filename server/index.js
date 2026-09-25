@@ -17,7 +17,7 @@ import { laterRouter, runReminders } from "./later.js";
 import { createPlaces } from "./places.js";
 import { randomBytes } from "node:crypto";
 
-const HIT_KEYS = /^(step:[0-9]|results|submit|paid|video|go)$/;
+const HIT_KEYS = /^(step:[0-9]|start|results|submit|paid|video|go)$/;
 
 export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   const crypt = makeCrypto(cfg.dataKey);

@@ -40,13 +40,27 @@
 
   function defineSteps() {
     var S = [
-      { id: "personal", fields: [
-        { id: "firstName", req: true, w: 3, auto: "given-name" },
-        { id: "lastName", req: true, w: 3, auto: "family-name" },
-        { id: "tz", req: true, w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: API ? "f.tz.hApi" : "f.tz.h", check: "tz" },
-        { id: "phone", req: true, w: 3, type: "tel", auto: "tel", ltr: true, check: "phone", hint: "f.phone.h" },
-        { id: "email", w: 6, type: "email", auto: "email", ltr: true, check: "email", hint: API ? "f.email.hApi" : "" },
-        { id: "tenure", type: "radio", req: true, w: 6, def: "rent", opts: opts(["rent", "own"], "o.tenure.") }
+      // השלב הראשון: רק שאלות קלות (לאן, מתי, שוכרים או בעלים). פרטים אישיים מבקשים רק בסוף,
+      // אחרי שכבר ברור מה מקבלים — ככה הרבה יותר אנשים ממשיכים.
+      { id: "address", fields: [
+        { id: "tenure", type: "radio", req: true, w: 6, def: "rent", opts: opts(["rent", "own"], "o.tenure.") },
+        // קודם עיר, ואז רחוב מתוך הרשימה הרשמית של אותה עיר
+        { group: "g.newAddr", map: "new", fields: [
+          { id: "newCity", req: true, w: 4, list: "cities", auto: "address-level2" },
+          { id: "newStreet", req: true, w: 4, list: "st-new", auto: "off", note: true },
+          { id: "newNum", req: true, w: 2, auto: "off" },
+          { id: "newApt", w: 2, mode: "numeric" }
+        ]},
+        { id: "moveDate", req: true, w: 3, type: "date", check: "date" },
+        // כל מה שלא חובה — מקופל, כדי שהמסך הראשון יהיה קצר
+        { collapse: "more.addr", fields: [
+          { id: "zip", w: 3, mode: "numeric", max: 7, auto: "postal-code", ltr: true, check: "zip", hint: "f.zip.h", link: ["f.zip.find", ZIP_URL] },
+          { id: "floor", w: 3, mode: "numeric", max: 3 },
+          { id: "landlord", w: 6, hint: "f.landlord.h", showIf: function (d) { return d.tenure === "rent"; } },
+          { group: "g.oldAddr", hint: "g.oldAddr.h", map: "old", fields: [
+            { id: "oldCity", w: 4, list: "cities" }, { id: "oldStreet", w: 6, list: "st-old", auto: "off", note: true }, { id: "oldApt", w: 2, mode: "numeric" }
+          ]}
+        ]}
       ]},
       { id: "household", fields: [
         { id: "people", w: 3, mode: "numeric", max: 2, def: "1", ltr: true, hint: "f.people.h" },
@@ -54,22 +68,6 @@
         { id: "kidsChecks", type: "checks", w: 6, opts: opts(["kidsUnder3", "kidsSchool", "singleParent", "kidDisability"], "o.") },
         { id: "eligChecks", type: "checks", w: 6, hint: "f.eligChecks.h", opts: opts(["senior", "seniorSupp", "nursing", "disability75", "disability90", "blind",
           "idf", "bereaved", "holocaust", "reservist", "soldier", "oleh", "lowIncome", "student"], "o.") }
-      ]},
-      { id: "address", fields: [
-        // קודם עיר, ואז רחוב מתוך הרשימה הרשמית של אותה עיר
-        { group: "g.newAddr", map: "new", fields: [
-          { id: "newCity", req: true, w: 4, list: "cities", auto: "address-level2" },
-          { id: "newStreet", req: true, w: 4, list: "st-new", auto: "off", note: true },
-          { id: "newNum", req: true, w: 2, auto: "off" },
-          { id: "newApt", w: 2, mode: "numeric" },
-          { id: "zip", w: 3, mode: "numeric", max: 7, auto: "postal-code", ltr: true, check: "zip", hint: "f.zip.h", link: ["f.zip.find", ZIP_URL] },
-          { id: "floor", w: 3, mode: "numeric", max: 3 }
-        ]},
-        { group: "g.oldAddr", hint: "g.oldAddr.h", map: "old", fields: [
-          { id: "oldCity", w: 4, list: "cities" }, { id: "oldStreet", w: 6, list: "st-old", auto: "off", note: true }, { id: "oldApt", w: 2, mode: "numeric" }
-        ]},
-        { id: "moveDate", req: true, w: 3, type: "date", check: "date" },
-        { id: "landlord", w: 3, hint: "f.landlord.h", showIf: function (d) { return d.tenure === "rent"; } }
       ]},
       { id: "moving", fields: (MOVERS_ON ? [
         { id: "moveStatus", type: "radio", req: true, w: 6, opts: opts(["quotes", "booked", "self"], "o.moveStatus.") },
@@ -117,12 +115,19 @@
         { id: "bank", w: 3, hint: "f.bank.h" },
         { id: "card", w: 3, hint: "f.card.h" },
         { id: "extras", type: "checks", w: 6, opts: opts(["xCar", "xInsurance", "xPension", "xEmployer", "xPost"], "o.") }
-      ]}
+      ]},
+      { id: "personal", fields: [
+        { id: "firstName", req: true, w: 3, auto: "given-name" },
+        { id: "lastName", req: true, w: 3, auto: "family-name" },
+        { id: "phone", req: true, w: 3, type: "tel", auto: "tel", ltr: true, check: "phone", hint: "f.phone.h" },
+        { id: "email", w: 3, type: "email", auto: "email", ltr: true, check: "email", hint: API ? "f.email.hApi" : "" }
+      ].concat(API ? [] : [{ id: "tz", w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: "f.tz.hOpt", check: "tz" }]) }
     ];
     if (API) S.push({ id: "send", fields: [
       { id: "service", type: "radio", req: true, w: 6, def: "self", opts: [
         ["self", t("o.service.self") + priceTag(PAY && PAY.priceSelf)], ["concierge", t("o.service.concierge") + priceTag(PAY && PAY.priceConcierge)]] },
       { id: "consent", type: "consent", req: true, w: 6 },
+      { id: "tz", req: true, w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: "f.tz.hConc", check: "tz", showIf: function (d) { return d.service === "concierge"; } },
       { id: "poa", type: "consent", req: true, w: 6, showIf: function (d) { return d.service === "concierge"; } },
       { id: "marketing", type: "consent", w: 6 }
     ]});
@@ -181,8 +186,10 @@
     }
     return wrapOpen + '<label for="' + f.id + '">' + esc(label) + reqMark + "</label>" + control + hint + err + "</div>";
   }
-  function stepHTML(s, i) {
-    var body = s.fields.map(function (f) {
+  function itemHTML(f) {
+      if (f.collapse) {
+        return '<details class="moref w6"><summary>' + esc(t(f.collapse)) + '</summary><div class="grid">' + f.fields.map(itemHTML).join("") + "</div></details>";
+      }
       if (f.group) {
         if (f.showIf) groupShows.push(f);
         return '<fieldset class="group"' + (f.gid ? ' id="grp-' + f.gid + '"' : "") + '><legend>' + esc(t(f.group)) + "</legend>" + (f.hint ? '<p class="hint">' + esc(t(f.hint)) + "</p>" : "") +
@@ -192,7 +199,9 @@
             '</button><p class="fnote" id="mapmsg-' + f.map + '" aria-live="polite"></p><div class="mapbox" id="map-' + f.map + '" hidden></div></div>' : "") + "</fieldset>";
       }
       return fieldHTML(f);
-    }).join("");
+  }
+  function stepHTML(s, i) {
+    var body = s.fields.map(itemHTML).join("");
     return '<section class="panel" data-step="' + i + '" aria-labelledby="h-' + i + '" hidden><h2 id="h-' + i + '" tabindex="-1">' + esc(t(stepKey(s, "h"))) +
       '</h2><p class="lead">' + esc(stepLead(s)) + '</p><div class="grid">' + body + "</div></section>";
   }
@@ -352,6 +361,10 @@
       else if (f.type === "consent") { if (f.id in d) $(f.id).checked = !!d[f.id]; }
       else if (v != null) $(f.id).value = v;
     });
+    // אם כבר מילאו משהו בחלק המקופל (למשל חזרו לאתר) — פותחים אותו
+    document.querySelectorAll("#steps details.moref").forEach(function (dt) {
+      if ([].some.call(dt.querySelectorAll("input"), function (x) { return x.type !== "radio" && x.type !== "checkbox" && x.value.trim(); })) dt.open = true;
+    });
   }
 
   var KEY = "movers-v3", step = 0, done = {}, submittedRef = "", paying = false, seen = {}, moversSent = null, kitTouched = false, suppliesSent = null, editToken = "", restored = false, callsAsked = {};
@@ -399,12 +412,12 @@
   var checks = { tz: C.validTz, phone: C.validPhone, email: C.validEmail, zip: C.validZip, date: C.validDate, qty: function (v) { return /^\d{1,3}$/.test(v); } };
   function setErr(f, msg) {
     var e = $(f.id + "-err"), ctrl = (f.type === "radio" || f.type === "checks") ? $(f.id + "-fs") : $(f.id);
-    if (msg) { e.textContent = msg; e.hidden = false; ctrl.setAttribute("aria-invalid", "true"); }
+    if (msg) { e.textContent = msg; e.hidden = false; ctrl.setAttribute("aria-invalid", "true"); var dt = ctrl.closest("details"); if (dt) dt.open = true; }
     else { e.textContent = ""; e.hidden = true; ctrl.removeAttribute("aria-invalid"); }
   }
   function fieldsOf(n) {
     var out = [];
-    (STEPS[n] ? STEPS[n].fields : []).forEach(function (f) { if (f.group) out = out.concat(f.fields); else out.push(f); });
+    (function walk(list) { list.forEach(function (f) { if (f.group || f.collapse) walk(f.fields); else out.push(f); }); })(STEPS[n] ? STEPS[n].fields : []);
     return out;
   }
   function validate(n) {
@@ -440,7 +453,7 @@
     step = n;
     document.querySelectorAll("[data-step]").forEach(function (s) { s.hidden = +s.dataset.step !== n; });
     var res = n === LAST;
-    $("results").hidden = !res; $("nav").hidden = res; $("hero").hidden = n > 0; $("how").hidden = res || n > 0; $("more").hidden = res || n > 0;
+    $("results").hidden = !res; $("nav").hidden = res; $("hero").hidden = n > 0; $("topGo").hidden = n > 0; $("how").hidden = res || n > 0; $("more").hidden = res || n > 0;
     $("progress").hidden = res; $("autosave").hidden = res;
     if (n > 0 && !$("explainer").hidden && !document.documentElement.classList.contains("videomode")) exClose(false);
     if (focus) $("welcome").hidden = true;
@@ -688,8 +701,10 @@
   $("exPlay").onclick = function () { if (exPlaying) exPause(); else exPlay(); };
   $("exClose").onclick = function () { exClose(true); };
   // כפתור ההתחלה בראש הדף
-  function goFill() { $("firstName").focus(); $("firstName").scrollIntoView({ block: "center", behavior: app.classList.contains("nm") ? "auto" : "smooth" }); hit("go"); }
+  function firstField() { return document.querySelector('[data-step="0"] input:not([type="hidden"]):checked, [data-step="0"] input:not([type="radio"]), [data-step="0"] select'); }
+  function goFill() { var f = firstField(); f.focus(); f.scrollIntoView({ block: "center", behavior: app.classList.contains("nm") ? "auto" : "smooth" }); hit("go"); }
   $("heroGo").onclick = goFill; $("stickyGo").onclick = goFill; $("ctaGo").onclick = goFill;
+  $("topGo").onclick = goFill;
   // בטלפון: כפתור "מתחילים" צף, כל עוד לא רואים את הכפתור הראשי או את הטופס
   (function () {
     if (!("IntersectionObserver" in window)) return;
@@ -712,11 +727,11 @@
     hero.addEventListener("pointermove", function (e) {
       if (app.classList.contains("nm") || e.pointerType === "touch") return;
       var r = hero.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-      viz.style.setProperty("--ry", (-14 + x * 22).toFixed(1) + "deg"); viz.style.setProperty("--rx", (8 - y * 14).toFixed(1) + "deg");
+      viz.style.setProperty("--ry", (-7 + x * 10).toFixed(1) + "deg"); viz.style.setProperty("--rx", (5 - y * 7).toFixed(1) + "deg");
     });
     hero.addEventListener("pointerleave", function () { viz.style.removeProperty("--ry"); viz.style.removeProperty("--rx"); });
   })();
-  $("exStart").onclick = function () { exClose(false); $("firstName").focus(); $("firstName").scrollIntoView({ block: "center" }); };
+  $("exStart").onclick = function () { exClose(false); var f = firstField(); f.focus(); f.scrollIntoView({ block: "center" }); };
 
   // ---------- תיאום שיחה עם נציג של גוף ----------
   var curCall = null;
@@ -943,6 +958,8 @@
   $("back").onclick = function () { showStep(Math.max(0, step - 1), true); };
   $("editBtn").onclick = function () { showStep(0, true); };
   $("copyDossier").onclick = function () { copy($("dossier").textContent, t("dos.copied")); };
+  $("f").addEventListener("input", function () { if (step === 0) hit("start"); });
+  $("f").addEventListener("change", function () { if (step === 0) hit("start"); });
   $("f").addEventListener("input", function (e) {
     var f = fieldById[e.target.id] || fieldById[e.target.name];
     if (f && $(f.id + "-err") && !$(f.id + "-err").hidden) setErr(f, "");
@@ -1021,7 +1038,7 @@
     var v = document.documentElement.getAttribute("data-theme"); if (v) return v;
     return window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
-  function themeLabel() { $("themeBtn").textContent = curTheme() === "dark" ? t("theme.toLight") : t("theme.toDark"); }
+  function themeLabel() { var l = curTheme() === "dark" ? t("theme.toLight") : t("theme.toDark"); $("themeTxt").textContent = l; $("themeBtn").title = l; $("themeBtn").classList.toggle("isdark", curTheme() === "dark"); }
   $("themeBtn").onclick = function () {
     var n = curTheme() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", n);
