@@ -28,6 +28,7 @@ select,input[type=text]{font:inherit;padding:.4rem .5rem;border:2px solid #687D7
 button{font:inherit;font-weight:bold;padding:.5rem 1rem;min-height:2.6rem;border-radius:8px;border:2px solid var(--a);background:var(--a);color:#fff;cursor:pointer}
 button.del{background:var(--e);border-color:var(--e)}.muted{color:var(--m)}
 :focus-visible{outline:3px solid #1450C8;outline-offset:2px}
+.warnbox{background:#FFF4D6;border:1px solid #E0B24A;color:#5C3D00;border-radius:10px;padding:.6rem .9rem;margin:.6rem 0;font-weight:600}
 .pill{display:inline-block;padding:.05rem .55rem;border-radius:6px;border:1px solid var(--l);font-size:.85rem}
 .sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.cap{text-align:right;padding:.5rem .8rem}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.8rem;margin-bottom:1rem}.tile{background:var(--s);border:1px solid var(--l);border-radius:12px;padding:.8rem 1rem;display:flex;flex-direction:column}.tile strong{font-size:1.8rem;font-variant-numeric:tabular-nums}
@@ -85,7 +86,11 @@ export function adminRouter({ db, crypt, cfg }) {
         <td>${esc(SERVICE[row.service])}</td><td><span class="pill ${esc(row.status)}">${esc(STATUS[row.status])}</span></td>
         <td class="n">${open_ ? open_ + " פתוחות" : "אין"}</td></tr>`;
     }).join("");
+    // אזהרה כשהמיילים לא מוגדרים — אחרת לקוחות לא מקבלים את הרשימה, ואתם לא יודעים על פניות חדשות
+    const warn = [!cfg.smtpUrl && "שליחת מיילים עוד לא מוגדרת (SMTP_URL ב-Render): לקוחות לא מקבלים את הרשימה במייל, ולא נשלחות תזכורות.",
+      !cfg.notifyTo && "לא הוגדר מייל להתראות (NOTIFY_TO ב-Render): לא תקבלו מייל על פנייה חדשה."].filter(Boolean);
     res.send(page("פניות", `<h1>פניות</h1>
+      ${warn.map((w) => `<p class="warnbox" role="status">⚠ ${esc(w)}</p>`).join("")}
       <div class="chips" role="navigation" aria-label="סינון לפי מצב">${chip("", "הכול", total)}${Object.entries(STATUS).map(([k, v]) => chip(k, v, counts[k])).join("")}</div>
       ${rows.length ? `<div class="t"><table><caption class="muted cap">${rows.length} פניות</caption>
       <thead><tr><th scope="col">מספר</th><th scope="col">התקבלה</th><th scope="col">שם</th><th scope="col">עיר חדשה</th><th scope="col">תאריך מעבר</th><th scope="col">שירות</th><th scope="col">מצב</th><th scope="col">משימות</th></tr></thead>

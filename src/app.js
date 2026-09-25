@@ -206,6 +206,7 @@
       '</h2><p class="lead">' + esc(stepLead(s)) + '</p><div class="grid">' + body + "</div></section>";
   }
   function buildForm(keep) {
+    cityArr = null;
     STEPS = defineSteps(); LAST = STEPS.length; allFields = []; fieldById = {}; groupShows = [];
     $("steps").innerHTML = STEPS.map(stepHTML).join("") +
       '<datalist id="cities">' + cityOptions() + "</datalist>" + '<datalist id="st-new"></datalist><datalist id="st-old"></datalist>';
@@ -233,16 +234,33 @@
   var govCities = [], stCache = {}, stLoaded = { new: null, old: null }, stTimer = {};
   // מפתח להשוואה בלבד (לא מוצג): בלי ניקוד וסימנים, וכתיב מלא/חסר נחשב אותו דבר (תקוה = תקווה)
   function pkey(s) { return String(s || "").replace(/[֑-ׇ]/g, "").replace(/[״"׳'`\-–־().,]/g, " ").replace(/וו/g, "ו").replace(/יי/g, "י").replace(/\s+/g, " ").trim(); }
-  function cityOptions() {
-    var seen = {}, out = [];
-    C.cityList(LANG).concat(govCities).forEach(function (c) { var k = pkey(c); if (c && !seen[k]) { seen[k] = 1; out.push('<option value="' + esc(c) + '"></option>'); } });
-    return out.join("");
+  // רשימת ההצעות מתחת לשדה מציגה רק את ~12 ההתאמות הקרובות למה שהוקלד, ולא את כל 1,300 הישובים / אלפי הרחובות.
+  // רשימה ארוכה מדי גורמת לספארי באייפון להיתקע בזמן הקלדה.
+  var cityArr = null;
+  function allCities() {
+    if (cityArr) return cityArr;
+    var seen = {}; cityArr = [];
+    C.cityList(LANG).concat(govCities).forEach(function (c) { var k = pkey(c); if (c && !seen[k]) { seen[k] = 1; cityArr.push(c); } });
+    return cityArr;
   }
+  function cityOptions() { return optionsFor(C.cityList(LANG).slice(0, 12)); }
+  function optionsFor(list) { return list.map(function (c) { return '<option value="' + esc(c) + '"></option>'; }).join(""); }
+  function topMatches(list, v, max) {
+    var k = pkey(v); if (!k) return [];
+    var starts = [], inside = [];
+    for (var i = 0; i < list.length && starts.length < max; i++) {
+      var sk = pkey(list[i]), at = sk.indexOf(k);
+      if (at === 0) starts.push(list[i]); else if (at > 0 && inside.length < max) inside.push(list[i]);
+    }
+    return starts.concat(inside).slice(0, max);
+  }
+  function fillList(dlId, items) { var dl = $(dlId); if (!dl) return; var h = optionsFor(items); if (dl._h !== h) { dl._h = h; dl.innerHTML = h; } }
+  function exactCity(v) { var k = pkey(v); return !!k && allCities().some(function (c) { return pkey(c) === k; }); }
   function loadCities() {
     if (!API || govCities.length || loadCities.busy) return;
     loadCities.busy = true;
     fetch(API.replace(/\/$/, "") + "/places/cities").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-      if (j && j.cities) { govCities = j.cities; var dl = $("cities"); if (dl) dl.innerHTML = cityOptions(); }
+      if (j && j.cities) { govCities = j.cities; cityArr = null; }
     }).catch(function () {}).then(function () { loadCities.busy = false; });
   }
   function demoStreets(city) {
@@ -298,11 +316,11 @@
   }
   function cityChanged(which) {
     var cityId = which + "City", stId = which + "Street", city = $(cityId) && $(cityId).value.trim();
-    if (!city) { stLoaded[which] = null; $("st-" + which).innerHTML = ""; note(stId, ""); return; }
+    if (!city) { stLoaded[which] = null; fillList("st-" + which, []); note(stId, ""); return; }
     getStreets(city).then(function (j) {
       if (!$(cityId) || $(cityId).value.trim() !== city) return;
       stLoaded[which] = j && j.streets && j.streets.length ? j : null;
-      $("st-" + which).innerHTML = stLoaded[which] ? j.streets.map(function (s) { return '<option value="' + esc(s) + '"></option>'; }).join("") : "";
+      fillList("st-" + which, stLoaded[which] ? topMatches(j.streets, streetOnly($(stId).value, which), 15) : []);
       if (!stLoaded[which]) { note(stId, ""); return; }
       if ($(stId).value.trim()) checkStreet(which);
       else note(stId, esc(t("addr.found", { n: j.streets.length, city: j.city })) + (API ? "" : " " + esc(t("addr.demo"))));
@@ -508,6 +526,8 @@
         var li = document.createElement("li"); li.className = "item" + (i.key ? " key" : "") + (done[i.id] ? " is-done" : "");
         var when = i.auto ? t("item.auto") : i.when;
         var need = i.need.length ? '<ul class="need" aria-label="' + esc(t("item.need")) + '">' + i.need.map(function (k) {
+          // תעודת זהות: לא מבקשים אותה ממי שמעדכן לבד — לכן זה לא "חסר", אלא "להכין" (מזינים באתר של הגוף)
+          if (k === "tz" && !d[k]) return '<li>' + esc(t("item.bring", { l: labels[k] })) + "</li>";
           return '<li class="' + (d[k] ? "" : "miss") + '">' + esc(t(d[k] ? "item.has" : "item.missing", { l: labels[k] })) + "</li>";
         }).join("") + "</ul>" : "";
         li.innerHTML = '<div class="head"><label class="check"><input type="checkbox" id="done-' + i.id + '" aria-describedby="desc-' + i.id + '"' + (done[i.id] ? " checked" : "") +
@@ -547,7 +567,7 @@
     if (submittedRef) {
       rb.hidden = false;
       rb.innerHTML = esc(t("res.ref", { ref: "" })) + "<strong>" + esc(submittedRef) + "</strong>" +
-        (d.service === "concierge" ? "<br>" + esc(t("res.refConcierge")) : (d.email ? "<br>" + esc(t("res.refEmail")) : ""));
+        (d.service === "concierge" ? "<br>" + esc(t("res.refConcierge")) : (d.email && CFG.mail ? "<br>" + esc(t("res.refEmail")) : ""));
     } else rb.hidden = true;
     $("dossier").textContent = dossier(d);
     $("dosHe").hidden = LANG === "he";
@@ -628,7 +648,7 @@
     if (!miss.length) { box.hidden = true; box.innerHTML = ""; return; }
     box.hidden = false;
     box.innerHTML = '<h2 id="laterTitle" tabindex="-1">' + esc(miss.length === 1 ? t("later.one") : t("later.title", { n: miss.length })) + "</h2>" +
-      "<p>" + esc(t("later.lead")) + (API && submittedRef && d.email ? " " + esc(t("later.leadApi")) : "") + '</p><p class="muted">' + esc(t("later.tip")) + "</p>" +
+      "<p>" + esc(t("later.lead")) + (API && submittedRef && d.email && CFG.mail ? " " + esc(t("later.leadApi")) : "") + '</p><p class="muted">' + esc(t("later.tip")) + "</p>" +
       '<div class="grid">' + miss.map(function (k) {
         var f = fieldById[k] || {};
         return '<div class="field w3"><label for="lt-' + k + '">' + esc(labels[k]) + '</label><input type="text" id="lt-' + k + '" maxlength="120"' +
@@ -708,8 +728,11 @@
   // בטלפון: כפתור "מתחילים" צף, כל עוד לא רואים את הכפתור הראשי או את הטופס
   (function () {
     if (!("IntersectionObserver" in window)) return;
-    var vis = { go: true, form: false };
-    function upd() { $("stickyCta").hidden = !(step === 0 && !vis.go && !vis.form && !document.documentElement.classList.contains("videomode")); }
+    var vis = { go: true, form: false }, typing = false;
+    function upd() { $("stickyCta").hidden = typing || !(step === 0 && !vis.go && !vis.form && !document.documentElement.classList.contains("videomode")); }
+    // בזמן הקלדה (המקלדת פתוחה) — לא מציגים כפתור צף שעלול לכסות את השדה
+    document.addEventListener("focusin", function (e) { if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) { typing = true; upd(); } });
+    document.addEventListener("focusout", function () { typing = false; setTimeout(upd, 50); });
     new IntersectionObserver(function (es) { vis.go = es[0].isIntersecting; upd(); }).observe($("heroGo"));
     new IntersectionObserver(function (es) { vis.form = es[0].isIntersecting; upd(); }, { rootMargin: "0px 0px -30% 0px" }).observe($("f"));
     window.addEventListener("avarnu-step", upd);
@@ -778,7 +801,7 @@
     fetch(API.replace(/\/$/, "") + "/callbacks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw j; return j; }); })
       .then(function () { done(t("cb.ok", { day: C.fmtDate(day), slot: slotText(sl.value) })); },
-        function (err) { showErr([["cbDay", (err && err.message) || t("err.network")]]); });
+        function (err) { showErr([["cbDay", (err && !(err instanceof Error) && err.message) || t("err.network")]]); });
   });
   $("cbErr").addEventListener("click", function (e) {
     var a = e.target.closest("a[data-focus]"); if (!a) return;
@@ -880,7 +903,9 @@
       })
       .catch(function (e) {
         var box = $("errsum");
-        box.innerHTML = "<h2>" + esc(t("err.sendFail")) + "</h2><p>" + esc((e && e.message) || t("err.network")) + "</p>";
+        // תקלת רשת (Error של הדפדפן, למשל "Failed to fetch") — הודעה ברורה במקום הטקסט הטכני. הודעה מהשרת — מציגים אותה.
+        var msg = (e instanceof Error || !e || !e.message) ? t("err.network") : e.message;
+        box.innerHTML = "<h2>" + esc(t("err.sendFail")) + "</h2><p>" + esc(msg) + "</p>";
         box.hidden = false; box.focus();
       })
       .then(function () { if (!paying) { btn.disabled = false; btn.textContent = t("nav.send"); } });
@@ -897,15 +922,22 @@
       el.innerHTML = esc(t(el.getAttribute("data-i18n-hl"))).replace(/\[\[(.+?)\]\]/g, '<mark class="hl">$1</mark>');
     });
     // פרטי קשר בהצהרות — ממולאים פעם אחת בקובץ site-info.js
-    var fill = function (v, ph) { return '<span class="fill">' + esc(v || ph) + "</span>"; };
-    $("a11yCoord").innerHTML = esc(t("dlg.a11y.coord")) + " " + fill(SITE.a11yName, "[שם מלא]") + "<br>" + esc(t("dlg.a11y.phone")) + ' <span dir="ltr">' + fill(SITE.a11yPhone, "[מספר]") +
-      "</span><br>" + esc(t("dlg.a11y.mail")) + ' <span dir="ltr">' + fill(SITE.a11yEmail, "[כתובת מייל]") + "</span>";
-    $("a11yReply").innerHTML = esc(t("dlg.a11y.reply", { n: "\u0000" })).replace("\u0000", fill(SITE.a11yReplyDays, "[מספר]"));
-    $("a11yUpdated").innerHTML = esc(t("dlg.a11y.updated", { date: "\u0000" })).replace("\u0000", fill(SITE.a11yUpdated, "[תאריך]"));
-    $("prRetention").innerHTML = esc(t("dlg.pr.m3", { n: "\u0000" })).replace("\u0000", fill(SITE.retentionDays, "[מספר]"));
-    $("prContact").innerHTML = esc(t("dlg.pr.contact")) + " " + fill(SITE.privacyName, "[שם]") + ", " + ' <span dir="ltr">' + fill(SITE.privacyEmail, "[כתובת מייל]") + "</span>";
-    $("prBiz").innerHTML = esc(t("dlg.pr.biz")) + " " + fill(SITE.business, "[שם העסק ומספר ח.פ.]");
-    $("trBiz").innerHTML = esc(t("dlg.pr.biz")) + " " + fill(SITE.business, "[שם העסק ומספר ח.פ.]");
+    // שורות שעוד לא מולאו ב-site-info.js — מוסתרות (בלי "[שם מלא]" וכו' באתר החי)
+    var fill = function (v) { return '<span class="fill">' + esc(v) + "</span>"; };
+    var line = function (id, html, show) { var el = $(id); if (!el) return; el.hidden = !show; el.innerHTML = show ? html : ""; };
+    var coord = [SITE.a11yName && esc(t("dlg.a11y.coord")) + " " + fill(SITE.a11yName),
+      SITE.a11yPhone && esc(t("dlg.a11y.phone")) + ' <span dir="ltr">' + fill(SITE.a11yPhone) + "</span>",
+      SITE.a11yEmail && esc(t("dlg.a11y.mail")) + ' <span dir="ltr">' + fill(SITE.a11yEmail) + "</span>"].filter(Boolean);
+    line("a11yCoord", coord.join("<br>"), coord.length);
+    line("a11yReply", esc(t("dlg.a11y.reply", { n: "\u0000" })).replace("\u0000", fill(SITE.a11yReplyDays)), !!SITE.a11yReplyDays);
+    line("a11yUpdated", esc(t("dlg.a11y.updated", { date: "\u0000" })).replace("\u0000", fill(SITE.a11yUpdated)), !!SITE.a11yUpdated);
+    line("prRetention", esc(t("dlg.pr.m3", { n: "\u0000" })).replace("\u0000", fill(SITE.retentionDays)), !!SITE.retentionDays);
+    var pc = [SITE.privacyName && fill(SITE.privacyName), SITE.privacyEmail && '<span dir="ltr">' + fill(SITE.privacyEmail) + "</span>"].filter(Boolean);
+    line("prContact", esc(t("dlg.pr.contact")) + " " + pc.join(", "), pc.length);
+    line("prBiz", esc(t("dlg.pr.biz")) + " " + fill(SITE.business), !!SITE.business);
+    line("trBiz", esc(t("dlg.pr.biz")) + " " + fill(SITE.business), !!SITE.business);
+    $("a11yH3").hidden = !coord.length && !SITE.a11yReplyDays;
+    $("prH3").hidden = !pc.length && !SITE.business;
     // יצירת קשר בתחתית הדף — מופיע רק אם מולאו פרטים ב-site-info.js
     var cl = $("contactLine"), parts = [];
     if (SITE.contactEmail) parts.push('<a href="mailto:' + esc(SITE.contactEmail) + '" dir="ltr">' + esc(SITE.contactEmail) + "</a>");
@@ -965,6 +997,16 @@
     if (f && $(f.id + "-err") && !$(f.id + "-err").hidden) setErr(f, "");
     if (C.KIT.indexOf(e.target.id) >= 0) kitTouched = true;
     applyShowIf(); updateLabel(); save();
+    // הצעות קצרות תוך כדי הקלדה
+    if (e.target.id === "newCity" || e.target.id === "oldCity") {
+      var cv = e.target.value, cw = e.target.id.slice(0, 3);
+      fillList("cities", cv.trim() ? topMatches(allCities(), cv, 12) : C.cityList(LANG).slice(0, 12));
+      if (exactCity(cv)) cityChanged(cw);   // בחרו עיר מהרשימה — טוענים את הרחובות שלה מיד
+    }
+    if ((e.target.id === "newStreet" || e.target.id === "oldStreet") && stLoaded[e.target.id.slice(0, 3)]) {
+      var sw = e.target.id.slice(0, 3);
+      fillList("st-" + sw, topMatches(stLoaded[sw].streets, streetOnly(e.target.value, sw), 15));
+    }
     // בדיקת הרחוב תוך כדי הקלדה (חצי שנייה אחרי שעוצרים), כדי שההודעה תופיע לפני שממשיכים
     if (e.target.id === "newStreet" || e.target.id === "oldStreet") {
       var w = e.target.id.slice(0, 3); clearTimeout(stTimer[w]); stTimer[w] = setTimeout(function () { checkStreet(w); }, 500);

@@ -1,5 +1,6 @@
 // השרת של "עברנו": מגיש את האתר, מקבל פניות, מריץ חיבורים, שותפים, תשלום (כבוי) ומסך ניהול.
 import express from "express";
+import compression from "compression";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "node:url";
@@ -27,6 +28,8 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   app.disable("x-powered-by");
   if (cfg.trustProxy) app.set("trust proxy", /^\d+$/.test(cfg.trustProxy) ? Number(cfg.trustProxy) : cfg.trustProxy);
 
+  // דחיסה (gzip): הסקריפטים וקובצי השפה קטנים פי 4 בדרך לטלפון
+  app.use(compression());
   app.use(helmet({
     contentSecurityPolicy: {
       useDefaults: true,
@@ -58,7 +61,7 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   // הגדרות לדפדפן — נקבעות ממשתני הסביבה, בלי לבנות מחדש
   app.get("/config.js", (req, res) => {
     const pub = {
-      api: "/api", ads: cfg.adsEnabled, movers: cfg.moversEnabled, supplies: cfg.suppliesEnabled, callbacks: cfg.callbacksEnabled, moversPaid: cfg.moversEnabled && M.anyPaying(), supportLangs: cfg.supportLangs,
+      api: "/api", ads: cfg.adsEnabled, movers: cfg.moversEnabled, supplies: cfg.suppliesEnabled, callbacks: cfg.callbacksEnabled, mail: !!cfg.smtpUrl, moversPaid: cfg.moversEnabled && M.anyPaying(), supportLangs: cfg.supportLangs,
       payments: { enabled: !!pay, priceConcierge: priceFor(cfg, "concierge"), priceSelf: priceFor(cfg, "self") }
     };
     res.type("js").set("Cache-Control", "no-cache").send("window.MOVERS_CONFIG = " + JSON.stringify(pub) + ";\n");
@@ -194,8 +197,17 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
 
   // ---- האתר ----
   // כתובות לפי שפה: /en, /ru, /ar (אותו דף, השפה נקבעת בדפדפן)
-  app.get(/^\/(he|en|ru|ar)\/?$/, (req, res) => res.sendFile(fileURLToPath(new URL("../public/index.html", import.meta.url))));
-  app.use(express.static(fileURLToPath(new URL("../public/", import.meta.url)), { extensions: ["html"], maxAge: cfg.prod ? "1h" : 0 }));
+  // דף הבית: תמיד בודקים אם יש גרסה חדשה (no-cache). הסקריפטים והעיצוב נטענים עם ?v=<גרסה>,
+  // כך שאחרי עדכון אף אחד לא מקבל דף חדש עם סקריפט ישן.
+  const indexFile = fileURLToPath(new URL("../public/index.html", import.meta.url));
+  app.get(/^\/(he|en|ru|ar)?\/?$/, (req, res) => res.set("Cache-Control", "no-cache").sendFile(indexFile));
+  app.use(express.static(fileURLToPath(new URL("../public/", import.meta.url)), {
+    extensions: ["html"], maxAge: cfg.prod ? "1h" : 0,
+    setHeaders: (res, path) => {
+      if (path.endsWith(".html")) res.set("Cache-Control", "no-cache");
+      else if (res.req && /[?&]v=/.test(res.req.originalUrl || "")) res.set("Cache-Control", "public, max-age=31536000, immutable");
+    }
+  }));
   app.use((req, res) => res.status(404).send(sitePage("הדף לא נמצא", `<section class="panel"><h1 class="pg-h1">הדף לא נמצא</h1>
     <p class="lead">אולי הקישור השתנה. אפשר להתחיל מדף הבית.</p><p><a class="btn primary" href="/">לדף הבית</a></p></section>`, { noindex: true })));
 

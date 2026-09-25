@@ -66,7 +66,7 @@ export function loadConfig(overrides = {}) {
     notifyTo: e.NOTIFY_TO || "",
     webhookUrl: e.WEBHOOK_URL || "",
     webhookSecret: e.WEBHOOK_SECRET || "",
-    rateLimit: Number(e.RATE_LIMIT || 10),
+    rateLimit: Number(e.RATE_LIMIT || 30),   // פניות לכל כתובת IP ב-15 דקות (ברשתות סלולר הרבה משתמשים חולקים IP)
     pendingPaymentHours: Number(e.PENDING_PAYMENT_HOURS || 48)
   };
 }

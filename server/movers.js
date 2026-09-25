@@ -3,6 +3,11 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import { catalog as C } from "./validate.js";
+import { readFileSync as _rf } from "node:fs";
+import { createHash as _hash } from "node:crypto";
+// גרסת קובץ העיצוב (כדי שאחרי עדכון לא יוצג עיצוב ישן מהמטמון)
+let _cssV = null;
+const cssVer = () => _cssV ??= (() => { try { return _hash("sha256").update(_rf(new URL("../public/styles.css", import.meta.url))).digest("hex").slice(0, 10); } catch { return "0"; } })();
 
 const now = () => new Date().toISOString();
 const token = () => randomBytes(18).toString("base64url");
@@ -126,7 +131,7 @@ export function sitePage(title, body, { noindex = false, lang = "he" } = {}) {
 <title>${esc(title)} · עברנו</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@700;800;900&family=Rubik:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="/styles.css"></head>
+<link rel="stylesheet" href="/styles.css?v=${cssVer()}"></head>
 <body><div id="app" lang="${lang}" dir="${dir}"><a class="skip" href="#main">${esc(T("skip"))}</a><div class="wrap">
 <header class="top navy"><a class="brand" href="${lang === "he" ? "/" : "/" + lang}">${LOGO}<span>עברנו</span><span class="tld" dir="ltr" aria-hidden="true">${lang === "he" ? ".com" : "avarnu.com"}</span></a></header>
 <main id="main" class="pg" tabindex="-1">${body}</main>

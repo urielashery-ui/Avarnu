@@ -95,7 +95,7 @@
     "chk.phone": "This phone number isn't valid. Write 9 or 10 digits, for example 050-1234567.",
     "chk.email": "This email address isn't valid. For example: name@gmail.com", "chk.zip": "The postal code should be 7 digits. Don't know it? Leave it empty.",
     "chk.date": "This date doesn't look right. Choose a date within the last year or the next two years.",
-    "chk.serviceEmail": "To email you the list, we need your email. Go back to step 1 and add it, or choose that we do the updates for you.",
+    "chk.serviceEmail": "To email you the list, we need your email. Go back one step and add it, or choose that we do the updates for you.",
     "err.one": "There is 1 thing to fix:", "err.many": "There are {n} things to fix:",
     "err.sendFail": "We couldn't send your details", "err.network": "Check your internet connection and try again. Your details were not deleted.",
     "err.payCancelT": "The payment wasn't completed", "err.payCancel": "You were not charged. Your details are saved, and you can try again.",
@@ -187,7 +187,7 @@
     "c.card.t": "Credit card: {name}", "c.card.d": "So a new card reaches the right address.",
     "c.ins.t": "Insurance companies", "c.ins.d": "Important: your home insurance needs to cover the new home. Without an update, your new home may not be insured.",
     "c.pension.t": "Pension and study fund", "c.pension.d": "On the Ministry of Finance's \"Har HaKesef\" website you can see all your savings. Then update your address with each fund.",
-    "c.post.t": "Israel Post: mail forwarding", "c.post.d": "A paid service. Mail sent to your old address is forwarded to the new one, for a period you choose.",
+    "c.post.t": "Israel Post: mail forwarding (\"Doar Okev\")", "c.post.d": "A paid service. Mail sent to your old address is forwarded to the new one, for a period you choose.",
     "c.kids.t": "Kindergarten or school in {city}", "c.kids.d": "Register your children with the municipality's education department. Places fill up, so do it early.",
     "c.emp.t": "Your workplace", "c.emp.d": "Update HR, for your payslip and Form 101.",
     "c.vaad.t": "House committee or management company", "c.vaad.d": "Introduce yourself and ask how to pay the house committee fee.",
@@ -304,7 +304,7 @@
     "m.suppliesConsent": "Please agree to share your details with the supplier, or choose just a shopping list.",
     "chk.qty": "Enter a number, e.g. 20. If you don't need it, enter 0.",
     "chk.suppliesAfter": "The delivery needs to arrive before moving day.",
-    "chk.suppliesOld": "To deliver to your current home we need its address. Go back to the addresses step and add it, or choose delivery to the new home.",
+    "chk.suppliesOld": "To deliver to your current home we need its address. Go back to step 1, open \"More details\" and add it, or choose delivery to the new home.",
     "sup.title": "Boxes and packing materials",
     "sup.movers": "We asked the movers to include boxes and bubble wrap in their quote. Confirm with them by phone when they'll bring them.",
     "sup.demo": "On the live site, the order goes to a packing supplier. They call to confirm price and time, and you pay on delivery.",
@@ -518,6 +518,7 @@
     "foot.tag": "Fill in once and get everything you need to do.",
     "f.tz.hOpt": "Optional. If you add it, it goes into the ready-made texts. Not saved on your device.",
     "f.tz.hConc": "Only because you asked us to update for you: offices require it. Stored encrypted.",
-    "more.addr": "More details: current address, zip code and floor (optional)"
+    "more.addr": "More details: current address, zip code and floor (optional)",
+    "item.bring": "{l}: have it ready (you enter it on their site)"
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

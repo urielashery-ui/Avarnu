@@ -6,7 +6,7 @@ globalThis.MOVERS_SITE = {
   a11yPhone: "",
   a11yEmail: "",
   a11yReplyDays: "",     // תוך כמה ימי עבודה חוזרים, למשל "5"
-  a11yUpdated: "",       // תאריך עדכון ההצהרה, למשל "01.11.2026"
+  a11yUpdated: "25.9.2026",       // תאריך עדכון ההצהרה, למשל "01.11.2026"
   privacyName: "",       // אחראי/ת פרטיות
   privacyEmail: "",
   retentionDays: "180",  // צריך להתאים ל-RETENTION_DAYS בשרת

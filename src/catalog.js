@@ -164,7 +164,7 @@
     add("gov", { id: "moin", key: true, t: t("c.moin.t"), d: t("c.moin.d"), when: t("w.moveDay"),
       url: "https://www.gov.il/he/service/changing_address", site: t("site.moin"), need: ["tz", "newStreet", "newCity", "moveDate"], msg: base });
     add("gov", { id: "mail", t: t("c.mail.t"), d: t("c.mail.d"), when: t("w.ifNeeded"),
-      url: "https://gov.il/he/service/changing_mail_address", site: t("site.moin"), need: ["tz"], msg: base });
+      url: "https://www.gov.il/he/service/changing_mail_address", site: t("site.moin"), need: ["tz"], msg: base });
     add("gov", { id: "btl", t: t("c.btl.t"), d: t("c.btl.d"), auto: true, url: "https://www.btl.gov.il", site: t("site.btl"), msg: base });
     add("gov", { id: "tax", t: t("c.tax.t"), d: t("c.tax.d"), auto: true, url: "https://www.gov.il/he/departments/israel_tax_authority", site: t("site.tax"), msg: base });
     if (d.xCar) add("gov", { id: "car", t: t("c.car.t"), d: t("c.car.d"), auto: true,
@@ -221,7 +221,7 @@
 
     // עוד
     if (d.xPost) add("other", { id: "post", t: t("c.post.t"), d: t("c.post.d"), when: t("w.weekBefore"),
-      url: "https://www.israelpost.co.il", site: t("site.post"), need: ["oldStreet", "oldCity"], msg: base + " הכתובת הקודמת: " + (addr(d, "old") || "—") + "." });
+      url: "https://doar.israelpost.co.il/content/follow-up-post", site: t("site.post"), need: ["oldStreet", "oldCity"], msg: base + " הכתובת הקודמת: " + (addr(d, "old") || "—") + "." });
     if (d.xKids || d.kidsSchool) add("other", { id: "kids", t: t("c.kids.t", { city: city }), d: t("c.kids.d"), when: t("w.asap"),
       url: g("רישום לגנים ובתי ספר עיריית " + cityHe + " עוברים דירה"), site: t("site.muniSearch"), search: true, msg: base });
     if (d.xEmployer) add("other", { id: "emp", t: t("c.emp.t"), d: t("c.emp.d"), when: t("w.weekAfter"), url: "", msg: base });

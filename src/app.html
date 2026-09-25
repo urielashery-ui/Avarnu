@@ -535,6 +535,29 @@ footer.foot button.quiet{color:var(--ink)}
 .moref[open]{padding-bottom:1rem}
 .moref>.grid{margin-top:.4rem}
 #app.hc .moref{border:2px solid #000}
+
+/* מסכים צרים מאוד (אייפון SE, 320px): הכותרת העליונה חייבת להיכנס בשורה אחת בלי לגלוש */
+@media (max-width:380px){
+  .top.navy{gap:.4rem}
+  .top .tools{gap:.3rem;min-width:0}
+  .iconbtn{padding:.4rem .5rem}
+  .langsel .globe{display:none}
+  .langsel{padding-inline:.45rem .1rem}.langsel select{max-width:4.6rem;padding-inline:0 .1rem}
+  .brand{font-size:1.05rem;gap:.35rem;min-width:0}.brand svg{width:1.55rem;height:1.55rem}
+}
+
+/* טלפון: עמודה אחת שלא מתרחבת בגלל תוכן ארוך (כפתורים, מילים ארוכות ברוסית) */
+@media (max-width:640px){
+  .hero{grid-template-columns:minmax(0,1fr)}
+  .hero>*{min-width:0}
+  .herocta>button,.herocta>a{white-space:normal;max-width:100%;text-align:start}
+  .hero h1,.hero .sub{overflow-wrap:break-word}
+}
+
+.pcard{max-width:100%;min-width:0}
+.pc-list li>span:not(.pi){flex:1;min-width:0;overflow-wrap:anywhere}
+.pc-head>div{min-width:0}
+@media (max-width:360px){.pcard{padding-inline:.9rem}.pc-list em{padding-inline:.5rem}.pc-list li{gap:.55rem}}
 </style>
 
 <div id="app" lang="he" dir="rtl">
@@ -802,7 +825,7 @@ footer.foot button.quiet{color:var(--ink)}
     <ul><li data-i18n="dlg.a11y.l1"></li><li data-i18n="dlg.a11y.l2"></li><li data-i18n="dlg.a11y.l3"></li><li data-i18n="dlg.a11y.l4"></li><li data-i18n="dlg.a11y.l5"></li><li data-i18n="dlg.a11y.l6"></li></ul>
     <h3 data-i18n="dlg.a11y.h2"></h3>
     <p data-i18n="dlg.a11y.p2"></p>
-    <h3 data-i18n="dlg.a11y.h3"></h3>
+    <h3 id="a11yH3" data-i18n="dlg.a11y.h3"></h3>
     <p id="a11yCoord"></p>
     <p id="a11yReply"></p>
     <p class="muted" id="a11yUpdated"></p>
@@ -819,7 +842,7 @@ footer.foot button.quiet{color:var(--ink)}
     <ul><li data-i18n="dlg.pr.l1"></li><li data-i18n="dlg.pr.l2"></li><li data-i18n="dlg.pr.l3"></li><li data-i18n="dlg.pr.l4"></li><li data-i18n="dlg.pr.l5"></li><li data-i18n="dlg.pr.l6"></li></ul>
     <h3 data-i18n="dlg.pr.h2"></h3>
     <ul><li data-i18n="dlg.pr.m1"></li><li data-i18n="dlg.pr.m2"></li><li id="prRetention"></li><li data-i18n="dlg.pr.m4"></li></ul>
-    <h3 data-i18n="dlg.pr.h3"></h3>
+    <h3 id="prH3" data-i18n="dlg.pr.h3"></h3>
     <p id="prContact"></p>
     <p class="muted" id="prBiz"></p>
   </div>

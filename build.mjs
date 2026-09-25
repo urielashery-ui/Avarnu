@@ -2,6 +2,7 @@
 //   dist/artifact.html  — קובץ יחיד (דמו מקומי, בלי שרת)
 //   public/             — האתר האמיתי: index.html + styles.css + app.js + catalog.js + config.js
 import { copyFileSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 const src = (f) => readFileSync(new URL("./src/" + f, import.meta.url), "utf8");
 const html = src("app.html"), catalog = src("catalog.js"), app = src("app.js"), siteInfo = src("site-info.js");
@@ -24,15 +25,19 @@ writeFileSync(new URL("./dist/artifact.html", import.meta.url), single.replace('
 const css = html.match(/<style>([\s\S]*?)<\/style>/)[1];
 const title = html.match(/<title>(.*?)<\/title>/)[1];
 const fonts = html.match(/<link rel="stylesheet"[^>]*>/)[0];
+// גרסה לכל קובץ (לפי התוכן) — משתנה רק כשהקובץ משתנה
+const ver = (c) => createHash("sha256").update(c).digest("hex").slice(0, 10);
+const V = { css: ver(html.match(/<style>([\s\S]*?)<\/style>/)[1]), app: ver(app), catalog: ver(catalog), site: ver(siteInfo) };
+for (const l of LANGS) V["i18n-" + l] = ver(src("i18n/" + l + ".js"));
 const body = html
   .replace(/<title>.*?<\/title>\s*/, "")
   .replace(/<link[^>]*>\s*/g, "")
   .replace(/<style>[\s\S]*?<\/style>\s*/, "")
-  .replace("<!--I18N-->", LANGS.map((l) => '<script src="/i18n/' + l + '.js"></script>').join(""))
-  .replace("<!--SITEINFO-->", '<script src="/site-info.js"></script>')
-  .replace("<!--CATALOG-->", '<script src="/catalog.js"></script>')
+  .replace("<!--I18N-->", LANGS.map((l) => '<script src="/i18n/' + l + '.js?v=' + V["i18n-" + l] + '"></script>').join(""))
+  .replace("<!--SITEINFO-->", '<script src="/site-info.js?v=' + V.site + '"></script>')
+  .replace("<!--CATALOG-->", '<script src="/catalog.js?v=' + V.catalog + '"></script>')
   .replace("<!--CONFIG-->", '<script src="/config.js"></script>')
-  .replace("<!--APP-->", '<script src="/app.js"></script>');
+  .replace("<!--APP-->", '<script src="/app.js?v=' + V.app + '"></script>');
 // הכתובת הקבועה של האתר — לקישורים קנוניים, מפת אתר ושיתוף ברשתות
 const SITE = "https://avarnu.com";
 const DESC = "עוברים דירה? ממלאים פרטים פעם אחת ומקבלים רשימה של כל הגופים שצריך לעדכן (משרד הפנים, חשמל, מים, ארנונה), את כל ההנחות שמגיעות לכם, וכמה קרטונים צריך.";
@@ -66,7 +71,7 @@ const page = `<!doctype html>
 <link rel="apple-touch-icon" href="/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 ${fonts}
-<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/styles.css?v=${V.css}">
 <link rel="preload" as="image" href="/city.webp" type="image/webp" media="(min-width: 641px)">
 <link rel="preload" as="image" href="/city-m.webp" type="image/webp" media="(max-width: 640px)">
 <link rel="alternate" hreflang="he" href="${SITE}/">
