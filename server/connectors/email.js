@@ -6,7 +6,7 @@ import { jobSummary, waLink } from "../movers.js";
 let transport;
 function getTransport(cfg) {
   if (!transport) {
-    transport = cfg.smtpUrl
+    transport = cfg.smtpUrl && !cfg.mailDryRun
       ? nodemailer.createTransport(cfg.smtpUrl)
       : nodemailer.createTransport({ jsonTransport: true }); // בלי SMTP: המייל רק נרשם בלוג
   }

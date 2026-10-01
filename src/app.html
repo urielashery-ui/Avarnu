@@ -558,6 +558,48 @@ footer.foot button.quiet{color:var(--ink)}
 .pc-list li>span:not(.pi){flex:1;min-width:0;overflow-wrap:anywhere}
 .pc-head>div{min-width:0}
 @media (max-width:360px){.pcard{padding-inline:.9rem}.pc-list em{padding-inline:.5rem}.pc-list li{gap:.55rem}}
+
+/* "שמרו לי ותזכירו" */
+.savebox{margin-top:1rem}
+.saveopen{color:var(--accent);padding-inline:.2rem;font-weight:700;text-align:start}
+.saveopen .ico{width:1.2rem;height:1.2rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.savepanel{margin-top:.6rem;border:1px solid var(--line);border-radius:18px;padding:1rem 1.1rem;background:var(--surface);box-shadow:var(--shadow)}
+.savepanel h3{font-size:1.15rem;margin-bottom:.3rem}
+.savepanel .field{margin:.8rem 0 .6rem;max-width:26rem}
+.savepanel .field input{width:100%}
+.svacts{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+#app.hc .savepanel{border:2px solid #000;box-shadow:none}
+
+/* התחלה מהירה בראש הדף: "לאן אתם עוברים?" */
+.quick{margin-top:1.5rem;max-width:36rem}
+.qlabel{display:block;font-family:var(--display);font-weight:800;font-size:1.2rem;margin-bottom:.5rem;color:var(--ink)}
+.qrow{display:flex;gap:.4rem;background:#fff;border-radius:999px;padding:.35rem;box-shadow:0 18px 40px -18px rgba(0,0,0,.6)}
+.qrow:focus-within{outline:3px solid #FFC23D;outline-offset:3px}
+.qrow input{flex:1;min-width:0;border:0;background:transparent;color:#0F1B33;font:inherit;font-size:1.1rem;padding:.55rem 1rem;min-height:3rem}
+.qrow input::placeholder{color:#5B6478}
+.qrow input:focus-visible{outline:none!important}
+.qrow .go{white-space:nowrap;box-shadow:none;margin:0}
+.herocta{margin-top:.9rem}
+#app.hc .qrow{border:2px solid #000;box-shadow:none}
+@media (max-width:520px){.qrow{flex-direction:column;border-radius:22px}.qrow .go{width:100%}.qrow input{text-align:start}}
+/* ===== סבב המרה: שלב אחרון ברור, פחות גלילה ===== */
+.subh{font-size:1.05rem;margin-top:.8rem}.subh .muted{font-weight:400;font-size:.9rem}
+.teaser{display:flex;gap:.7rem;align-items:flex-start;background:var(--chip);border:1px solid var(--line);border-inline-start:5px solid var(--accent);border-radius:16px;padding:.85rem 1rem;margin:.6rem 0 .2rem;line-height:1.5}
+.teaser .ico{flex:none;width:1.4rem;height:1.4rem;margin-top:.1rem;fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.teaser:empty{display:none}
+.nav.final #next{flex:1 1 60%;min-height:3.6rem;font-size:1.15rem}
+.trust{display:flex;align-items:center;justify-content:center;gap:.4rem;color:var(--muted);font-size:.92rem;margin-top:.7rem;text-align:center}
+.trust .ico{width:1.05rem;height:1.05rem;fill:none;stroke:currentColor;stroke-width:2}
+.trust[hidden]{display:none}
+@media (max-width:640px){
+  .field.m3{grid-column:span 3}
+  .nav{flex-direction:column-reverse}.nav button{width:100%}
+  .nav #back{background:transparent;border-color:transparent;box-shadow:none;text-decoration:underline;min-height:2.6rem}
+}
+.sharebox{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.8rem;border:1px dashed var(--line);border-radius:16px;padding:.9rem 1rem;margin:.8rem 0}
+.sharebox p{flex:1 1 16rem;margin:0}
+.sharebox .btn.wa,.sharebox .btn.wa:visited{background:#0B6B38;color:#fff;border-color:transparent;font-weight:700;display:inline-flex;align-items:center;gap:.45rem}
+.btn.wa .ico{width:1.2rem;height:1.2rem;fill:none;stroke:#fff;stroke-width:2}
 </style>
 
 <div id="app" lang="he" dir="rtl">
@@ -604,8 +646,11 @@ footer.foot button.quiet{color:var(--ink)}
         <h1 id="heroTitle" data-i18n-hl="hero.title">עוברים דירה? ממלאים פרטים פעם אחת, ומקבלים <mark class="hl">כל הנחה</mark> שמגיעה לכם.</h1>
         <p class="sub" data-i18n="hero.sub">נגיד לכם את מי צריך לעדכן ומתי. נמצא בשבילכם הנחות בארנונה, בחשמל ובמים, ונכין את הבקשות.</p>
         <ul class="facts" id="facts" data-i18n-aria="facts.label" aria-label="בקצרה"></ul>
+        <form class="quick" id="quickForm" novalidate>
+          <label for="qCity" class="qlabel" data-i18n="q.label">לאן אתם עוברים?</label>
+          <div class="qrow"><input type="text" id="qCity" list="cities" autocomplete="address-level2" maxlength="60"><button type="submit" class="primary go" id="heroGo" data-i18n="hero.go">מתחילים, זה 5 דקות</button></div>
+        </form>
         <div class="herocta">
-          <button type="button" class="primary go" id="heroGo" data-i18n="hero.go">מתחילים, זה 5 דקות</button>
           <button type="button" class="exopen" id="exOpen" aria-controls="explainer" aria-expanded="false"><span class="playic" aria-hidden="true"></span><span data-i18n="ex.open">איך זה עובד? סרטון של 30 שניות</span></button>
         </div>
       </div>
@@ -698,7 +743,20 @@ footer.foot button.quiet{color:var(--ink)}
         <button type="button" id="back" data-i18n="nav.back">חזרה לשלב הקודם</button>
         <button type="submit" class="primary" id="next" data-i18n="nav.next">המשך לשלב הבא</button>
       </div>
+      <p class="trust" id="trust" hidden><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> <span id="trustTxt"></span></p>
       <p class="muted autosave" id="autosave" data-i18n="auto.note"></p>
+      <div class="savebox" id="saveBox" hidden>
+        <button type="button" class="quiet saveopen" id="saveOpen" aria-expanded="false" aria-controls="savePanel"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg> <span data-i18n="dr.open"></span></button>
+        <div class="savepanel" id="savePanel" role="group" aria-labelledby="svTitle" hidden>
+          <h3 id="svTitle" data-i18n="dr.title"></h3>
+          <p class="hint" data-i18n="dr.lead"></p>
+          <div class="field"><label for="svContact" data-i18n="dr.contact"></label><input type="text" id="svContact" inputmode="email" autocomplete="email" dir="ltr" maxlength="120" aria-describedby="svErr"></div>
+          <label class="choice"><input type="checkbox" id="svConsent" aria-describedby="svErr"> <span data-i18n="dr.consent"></span></label>
+          <p class="ferr" id="svErr" role="alert" hidden></p>
+          <div class="svacts"><button type="button" class="primary" id="svSave" data-i18n="dr.save"></button><button type="button" class="quiet" id="svCancel" data-i18n="dr.cancel"></button></div>
+        </div>
+        <p class="fnote ok" id="svDone" role="status" hidden></p>
+      </div>
     </form>
 
     <section id="results" aria-labelledby="rTitle" hidden>
@@ -712,6 +770,7 @@ footer.foot button.quiet{color:var(--ink)}
         </div>
         <div class="bar" aria-hidden="true"><i id="bar"></i></div>
         <div class="refbox" id="refbox" hidden></div>
+        <div class="sharebox" id="shareBox"><p><b data-i18n="share.h"></b> <span data-i18n="share.p"></span></p><a class="btn wa" id="shareWa" target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/></svg> <span data-i18n="share.btn"></span><span class="sr" data-i18n="newWin"></span></a></div>
         <p class="lead" data-i18n="res.markHint">סמנו כל גוף שכבר עדכנתם. הסימון נשמר רק אצלכם.</p>
         <button type="button" id="editBtn" data-i18n="res.edit">שינוי הפרטים</button>
       </div>
@@ -839,7 +898,7 @@ footer.foot button.quiet{color:var(--ink)}
     <p class="henote henote-dlg" hidden></p>
     <p id="privMode"></p>
     <h3 data-i18n="dlg.pr.h1"></h3>
-    <ul><li data-i18n="dlg.pr.l1"></li><li data-i18n="dlg.pr.l2"></li><li data-i18n="dlg.pr.l3"></li><li data-i18n="dlg.pr.l4"></li><li data-i18n="dlg.pr.l5"></li><li data-i18n="dlg.pr.l6"></li></ul>
+    <ul><li data-i18n="dlg.pr.l1"></li><li data-i18n="dlg.pr.l2"></li><li data-i18n="dlg.pr.l3"></li><li data-i18n="dlg.pr.l4"></li><li data-i18n="dlg.pr.l5"></li><li data-i18n="dlg.pr.l6"></li><li data-i18n="dlg.pr.l7"></li></ul>
     <h3 data-i18n="dlg.pr.h2"></h3>
     <ul><li data-i18n="dlg.pr.m1"></li><li data-i18n="dlg.pr.m2"></li><li id="prRetention"></li><li data-i18n="dlg.pr.m4"></li></ul>
     <h3 id="prH3" data-i18n="dlg.pr.h3"></h3>

@@ -48,10 +48,10 @@
         { group: "g.newAddr", map: "new", fields: [
           { id: "newCity", req: true, w: 4, list: "cities", auto: "address-level2" },
           { id: "newStreet", req: true, w: 4, list: "st-new", auto: "off", note: true },
-          { id: "newNum", req: true, w: 2, auto: "off" },
-          { id: "newApt", w: 2, mode: "numeric" }
+          { id: "newNum", req: true, w: 2, m: 3, auto: "off" },
+          { id: "newApt", w: 2, m: 3, mode: "numeric" }
         ]},
-        { id: "moveDate", req: true, w: 3, type: "date", check: "date" },
+        { id: "moveDate", req: true, w: 3, type: "date", check: "date", hint: "f.moveDate.h" },
         // כל מה שלא חובה — מקופל, כדי שהמסך הראשון יהיה קצר
         { collapse: "more.addr", fields: [
           { id: "zip", w: 3, mode: "numeric", max: 7, auto: "postal-code", ltr: true, check: "zip", hint: "f.zip.h", link: ["f.zip.find", ZIP_URL] },
@@ -65,12 +65,18 @@
       { id: "household", fields: [
         { id: "people", w: 3, mode: "numeric", max: 2, def: "1", ltr: true, hint: "f.people.h" },
         { id: "kidsCount", w: 3, mode: "numeric", max: 2, def: "0", ltr: true },
-        { id: "kidsChecks", type: "checks", w: 6, opts: opts(["kidsUnder3", "kidsSchool", "singleParent", "kidDisability"], "o.") },
-        { id: "eligChecks", type: "checks", w: 6, hint: "f.eligChecks.h", opts: opts(["senior", "seniorSupp", "nursing", "disability75", "disability90", "blind",
-          "idf", "bereaved", "holocaust", "reservist", "soldier", "oleh", "lowIncome", "student"], "o.") }
-      ]},
-      { id: "moving", fields: (MOVERS_ON ? [
-        { id: "moveStatus", type: "radio", req: true, w: 6, opts: opts(["quotes", "booked", "self"], "o.moveStatus.") },
+        // שאלות על ילדים — רק למי שכתב שיש ילדים (פחות גלילה לכל השאר)
+        { id: "kidsChecks", type: "checks", w: 6, showIf: function (d) { return +d.kidsCount > 0 || !!(d.kidsUnder3 || d.kidsSchool || d.singleParent || d.kidDisability); },
+          opts: opts(["kidsUnder3", "kidsSchool", "singleParent", "kidDisability"], "o.") },
+        // המצבים הנפוצים גלויים; השאר מקופלים — רשימה של 14 תיבות מבריחה אנשים בטלפון
+        { id: "eligChecks", type: "checks", w: 6, hint: "f.eligChecks.h", opts: opts(["student", "oleh", "reservist", "soldier", "senior", "lowIncome"], "o.") },
+        { collapse: "more.elig", fields: [
+          { id: "eligMore", type: "checks", w: 6, opts: opts(["seniorSupp", "nursing", "disability75", "disability90", "blind", "idf", "bereaved", "holocaust"], "o.") }
+        ]},
+        // כל מה שלא חובה — מקופל באותו שלב. מי שממהר ממשיך ישר לסוף; מי שרוצה רשימה מדויקת יותר פותח.
+        { sub: "s.extras.h" },
+        { collapse: MOVERS_ON ? "s.moving.h" : "s.movingPack.h", fields: (MOVERS_ON ? [
+        { id: "moveStatus", type: "radio", w: 6, opts: opts(["quotes", "booked", "self"], "o.moveStatus.") },
         { id: "oldFloor", w: 3, mode: "numeric", max: 2, hint: "f.oldFloor.h", showIf: wantsQuotes },
         { id: "elevChecks", type: "checks", w: 3, showIf: wantsQuotes, opts: opts(["oldElevator", "newElevator"], "o.") },
         { id: "dateFlex", type: "radio", w: 6, def: "exact", showIf: wantsQuotes, opts: opts(["exact", "flex"], "o.dateFlex.") },
@@ -90,8 +96,8 @@
         { id: "suppliesConsent", type: "consent", req: true, w: 6, showIf: wantsDelivery, note: LANG !== "he" ? "f.suppliesConsent.lang" : "" }
       ]).concat(MOVERS_ON ? [
         { id: "moversConsent", type: "consent", req: true, w: 6, showIf: wantsQuotes, note: LANG !== "he" ? "f.moversConsent.lang" : "" }
-      ] : [])},
-      { id: "meters", fields: [
+      ] : []) },
+        { collapse: "s.meters.h", fields: [
         { group: "g.elec", fields: [
           { id: "elecContract", w: 3, mode: "numeric", ltr: true, hint: "f.elecContract.h" },
           { id: "elecMeter", w: 3, mode: "numeric", ltr: true, hint: "f.elecMeter.h" },
@@ -106,8 +112,8 @@
           { id: "gas", type: "select", w: 3, opts: brands(["אמישראגז", "פזגז", "סופרגז"]).concat([["central", t("o.gas.central")], ["אחר", t("o.other")]]) },
           { id: "gasRead", w: 3, mode: "decimal", ltr: true }
         ]}
-      ]},
-      { id: "providers", fields: [
+      ] },
+        { collapse: "s.providers.h", fields: [
         { id: "isp", type: "select", w: 3, opts: brands(["בזק", "HOT", "פרטנר", "סלקום", "אחר"]) },
         { id: "tv", type: "select", w: 3, opts: brands(["yes", "HOT", "פרטנר", "סלקום", "אחר"]) },
         { id: "mobile", type: "select", w: 3, opts: brands(["פלאפון", "סלקום", "פרטנר", "הוט מובייל", "גולן טלקום", "אחר"]) },
@@ -115,20 +121,27 @@
         { id: "bank", w: 3, hint: "f.bank.h" },
         { id: "card", w: 3, hint: "f.card.h" },
         { id: "extras", type: "checks", w: 6, opts: opts(["xCar", "xInsurance", "xPension", "xEmployer", "xPost"], "o.") }
+      ] }
       ]},
+    ].concat(API ? [] : [
+      // בהדגמה (בלי שרת): שלב פרטים אישיים אחרון. באתר: הפרטים האישיים והשליחה באותו שלב (למטה).
       { id: "personal", fields: [
         { id: "firstName", req: true, w: 3, auto: "given-name" },
         { id: "lastName", req: true, w: 3, auto: "family-name" },
         { id: "phone", req: true, w: 3, type: "tel", auto: "tel", ltr: true, check: "phone", hint: "f.phone.h" },
-        { id: "email", w: 3, type: "email", auto: "email", ltr: true, check: "email", hint: API ? "f.email.hApi" : "" }
-      ].concat(API ? [] : [{ id: "tz", w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: "f.tz.hOpt", check: "tz" }]) }
-    ];
+        { id: "email", w: 3, type: "email", auto: "email", ltr: true, check: "email", hint: API ? "f.email.hApi" : "" },
+        { id: "tz", w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: "f.tz.hOpt", check: "tz" } ] }
+    ]);
     if (API) S.push({ id: "send", fields: [
+        { id: "firstName", req: true, w: 3, m: 3, auto: "given-name" },
+        { id: "lastName", req: true, w: 3, m: 3, auto: "family-name" },
+        { id: "phone", req: true, w: 3, type: "tel", auto: "tel", ltr: true, check: "phone", hint: "f.phone.h" },
+        { id: "email", w: 3, type: "email", auto: "email", ltr: true, check: "email", hint: API ? "f.email.hApi" : "" },
       { id: "service", type: "radio", req: true, w: 6, def: "self", opts: [
         ["self", t("o.service.self") + priceTag(PAY && PAY.priceSelf)], ["concierge", t("o.service.concierge") + priceTag(PAY && PAY.priceConcierge)]] },
-      { id: "consent", type: "consent", req: true, w: 6 },
       { id: "tz", req: true, w: 3, mode: "numeric", max: 9, auto: "off", ltr: true, hint: "f.tz.hConc", check: "tz", showIf: function (d) { return d.service === "concierge"; } },
       { id: "poa", type: "consent", req: true, w: 6, showIf: function (d) { return d.service === "concierge"; } },
+      { id: "consent", type: "consent", req: true, w: 6 },
       { id: "marketing", type: "consent", w: 6 }
     ]});
     return S;
@@ -141,6 +154,7 @@
     if (s.id === "moving" && MOVERS_ON) l += " " + t("s.movingPack.lead");
     if (s.id === "moving" && CFG.moversPaid) l += " " + t("s.moving.paid");
     if (s.id === "send") {
+      l = t("s.personal.lead") + " " + l;
       if (PAY) l += " " + t("s.send.payNote");
       var sl = (CFG.supportLangs || ["he"]).map(function (x) { return t("ln." + x); });
       if (LANG !== "he" || sl.length > 1) l += " " + t("s.send.support", { langs: sl.join(", ") });
@@ -160,7 +174,7 @@
       (f.link ? ' <a href="' + f.link[1] + '" target="_blank" rel="noopener">' + esc(t(f.link[0])) + ' <span class="sr">' + esc(t("newWin")) + "</span></a>" : "") + "</p>" : "";
     if (f.note) hint += '<p class="fnote" id="note-' + f.id + '" aria-live="polite"></p>';
     var err = '<p class="ferr" id="' + errId + '" hidden></p>';
-    var wrapOpen = '<div class="field ' + w + '" id="wrap-' + f.id + '">';
+    var wrapOpen = '<div class="field ' + w + (f.m ? " m" + f.m : "") + '" id="wrap-' + f.id + '">';
     if (f.type === "radio" || f.type === "checks") {
       var inputs = f.opts.map(function (o) {
         var isChk = f.type === "checks";
@@ -187,6 +201,7 @@
     return wrapOpen + '<label for="' + f.id + '">' + esc(label) + reqMark + "</label>" + control + hint + err + "</div>";
   }
   function itemHTML(f) {
+      if (f.sub) return '<h3 class="subh w6">' + esc(t(f.sub)) + ' <span class="muted">' + esc(t("optional")) + "</span></h3>";
       if (f.collapse) {
         return '<details class="moref w6"><summary>' + esc(t(f.collapse)) + '</summary><div class="grid">' + f.fields.map(itemHTML).join("") + "</div></details>";
       }
@@ -203,7 +218,7 @@
   function stepHTML(s, i) {
     var body = s.fields.map(itemHTML).join("");
     return '<section class="panel" data-step="' + i + '" aria-labelledby="h-' + i + '" hidden><h2 id="h-' + i + '" tabindex="-1">' + esc(t(stepKey(s, "h"))) +
-      '</h2><p class="lead">' + esc(stepLead(s)) + '</p><div class="grid">' + body + "</div></section>";
+      '</h2>' + (s.id === "send" ? '<p class="teaser" id="teaser"></p>' : "") + '<p class="lead">' + esc(stepLead(s)) + '</p><div class="grid">' + body + "</div></section>";
   }
   function buildForm(keep) {
     cityArr = null;
@@ -217,7 +232,7 @@
         if (f.def == null) return;
         if (f.type === "radio") { var r = $(f.id + "-" + f.def); if (r) r.checked = true; } else $(f.id).value = f.def;
       });
-      if ($("xPost")) $("xPost").checked = true;
+      if ($("xPost")) $("xPost").checked = $("xPost").defaultChecked = true;
     }
   }
 
@@ -385,10 +400,22 @@
     });
   }
 
+  var DRAFT_KEY = "avarnu-draft", draftToken = "", draftTimer = null;
+  try { draftToken = localStorage.getItem(DRAFT_KEY) || ""; } catch (e) {}
   var KEY = "movers-v3", step = 0, done = {}, submittedRef = "", paying = false, seen = {}, moversSent = null, kitTouched = false, suppliesSent = null, editToken = "", restored = false, callsAsked = {};
+  // מקור ההגעה: קישור כמו avarnu.com/?src=fb-dirot-tlv. נזכר 30 יום (אותו אדם שחוזר אחר כך עדיין נספר למקור),
+  // נשלח עם המונים ועם הפנייה — כדי לראות בניהול איזו קבוצה או שותף מביאים פניות. בלי עוגיות ובלי פרטים אישיים.
+  var SRC = (function () {
+    var m = /[?&](?:src|utm_source)=([A-Za-z0-9_-]{1,32})/.exec(location.search), s = m ? m[1].toLowerCase() : "";
+    try {
+      if (s) localStorage.setItem("avarnu-src", JSON.stringify({ s: s, t: Date.now() }));
+      else { var o = JSON.parse(localStorage.getItem("avarnu-src") || "null"); if (o && Date.now() - o.t < 30 * 864e5) s = o.s; }
+    } catch (e) {}
+    return s;
+  })();
   function hit(k) {
     if (!API || seen[k]) return; seen[k] = true;
-    try { fetch(API.replace(/\/$/, "") + "/hit", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ k: k }) }).catch(function () {}); } catch (e) {}
+    try { fetch(API.replace(/\/$/, "") + "/hit", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify(SRC ? { k: k, src: SRC } : { k: k }) }).catch(function () {}); } catch (e) {}
   }
   function save() {
     try {
@@ -435,7 +462,7 @@
   }
   function fieldsOf(n) {
     var out = [];
-    (function walk(list) { list.forEach(function (f) { if (f.group || f.collapse) walk(f.fields); else out.push(f); }); })(STEPS[n] ? STEPS[n].fields : []);
+    (function walk(list) { list.forEach(function (f) { if (f.sub) return; if (f.group || f.collapse) walk(f.fields); else out.push(f); }); })(STEPS[n] ? STEPS[n].fields : []);
     return out;
   }
   function validate(n) {
@@ -445,7 +472,6 @@
       var v = d[f.id], msg = "";
       if (f.req && !v) { var mk = "m." + f.id; msg = C.T(LANG, mk) !== mk ? t(mk) : t("m.default"); }
       else if (v && f.check && checks[f.check] && !checks[f.check](v)) msg = t("chk." + f.check);
-      if (!msg && f.id === "service" && v === "self" && !d.email) msg = t("chk.serviceEmail");
       if (!msg && f.id === "suppliesDate" && v && d.moveDate && v > d.moveDate) msg = t("chk.suppliesAfter");
       if (!msg && f.id === "suppliesTo" && wantsDelivery(d) && v === "old" && !(d.oldStreet && d.oldCity)) msg = t("chk.suppliesOld");
       setErr(f, msg);
@@ -484,9 +510,16 @@
       $("next").textContent = n < STEPS.length - 1 ? t("nav.next") : (API ? t("nav.send") : t("nav.finish"));
     }
     applyShowIf();
+    if (!res && STEPS[n] && STEPS[n].id === "send") teaser();
+    var fin = !res && n === STEPS.length - 1;
+    $("nav").classList.toggle("final", fin); $("trust").hidden = !fin;
+    $("trustTxt").textContent = t("send.trust") + (PAY && (PAY.priceSelf || PAY.priceConcierge) ? "" : " · " + t("send.free"));
+    // מה שכבר סומן בחלק מקופל — פותחים, כדי שלא ייראה כאילו נעלם
+    document.querySelectorAll('[data-step="' + n + '"] details.moref').forEach(function (dt) { if ([].some.call(dt.querySelectorAll('input[type="checkbox"]'), function (x) { return x.checked !== x.defaultChecked; })) dt.open = true; });
     // בשלב הכתובת: אם כבר יש עיר (למשל חזרתם לאתר), טוענים את הרחובות שלה
     if (!res && STEPS[n] && STEPS[n].id === "address") ["new", "old"].forEach(function (w) { if ($(w + "City") && $(w + "City").value.trim() && !stLoaded[w]) cityChanged(w); });
     hit(res ? "results" : "step:" + n);
+    updateSaveBox(); if (n > 0) draftUpdate();
     if (res) render();
     updateLabel(); save();
     try { window.dispatchEvent(new Event("avarnu-step")); } catch (e) {}
@@ -496,6 +529,13 @@
     }
   }
 
+  // לפני שמבקשים שם וטלפון — מראים מה כבר מצאנו (כמה גופים וכמה הנחות), כדי שיהיה ברור מה מקבלים
+  function teaser() {
+    var d = data(), n = C.build(d, { lang: LANG }).length;
+    var b = C.benefits(d, { lang: LANG }).filter(function (x) { return x.sure === "likely"; }).length;
+    $("teaser").innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg><span><b>' +
+      esc(t("teaser.n", { n: n })) + (b ? esc(b === 1 ? t("teaser.b1") : t("teaser.bn", { b: b })) : "") + "</b> " + esc(t("teaser.end")) + "</span>";
+  }
   function updateLabel() {
     var d = data();
     $("lblFrom").textContent = C.addrL(d, "old", LANG) || t("label.fromEmpty");
@@ -513,7 +553,13 @@
     a.innerHTML = esc(text) + ' <span aria-hidden="true">↗</span><span class="sr"> ' + esc(t("newWin")) + "</span>";
     return a;
   }
+  // שיתוף בוואטסאפ: חבר שעובר דירה — כל אחד מביא עוד אחד
+  function shareLink() {
+    var url = (location.origin && /^https?:/.test(location.origin) ? location.origin : "https://avarnu.com") + "/?src=share";
+    $("shareWa").href = "https://wa.me/?text=" + encodeURIComponent(t("share.msg") + " " + url);
+  }
   function render() {
+    shareLink();
     var d = data(), items = C.build(d, { lang: LANG }), box = $("groups"), labels = C.labels(LANG);
     box.innerHTML = "";
     if (LANG !== "he") { var hn = document.createElement("p"); hn.className = "henote"; hn.textContent = t("res.heNote"); box.appendChild(hn); }
@@ -723,7 +769,19 @@
   // כפתור ההתחלה בראש הדף
   function firstField() { return document.querySelector('[data-step="0"] input:not([type="hidden"]):checked, [data-step="0"] input:not([type="radio"]), [data-step="0"] select'); }
   function goFill() { var f = firstField(); f.focus(); f.scrollIntoView({ block: "center", behavior: app.classList.contains("nm") ? "auto" : "smooth" }); hit("go"); }
-  $("heroGo").onclick = goFill; $("stickyGo").onclick = goFill; $("ctaGo").onclick = goFill;
+  $("stickyGo").onclick = goFill; $("ctaGo").onclick = goFill;
+  // התחלה מהירה: העיר שהוקלדה בראש הדף עוברת לטופס, והסמן קופץ לרחוב
+  $("qCity").addEventListener("input", function () { var v = $("qCity").value; fillList("cities", v.trim() ? topMatches(allCities(), v, 12) : C.cityList(LANG).slice(0, 12)); });
+  $("qCity").addEventListener("focus", loadCities);
+  $("quickForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("qCity").value.trim(), city = $("newCity");
+    if (v && city) {
+      city.value = v;
+      ["input", "change"].forEach(function (ev) { city.dispatchEvent(new Event(ev, { bubbles: true })); });
+      var st = $("newStreet"); st.focus(); st.scrollIntoView({ block: "center", behavior: app.classList.contains("nm") ? "auto" : "smooth" }); hit("go");
+    } else goFill();
+  });
   $("topGo").onclick = goFill;
   // בטלפון: כפתור "מתחילים" צף, כל עוד לא רואים את הכפתור הראשי או את הטופס
   (function () {
@@ -889,12 +947,14 @@
   // ---------- שליחה לשרת (מצב אתר אמיתי) ----------
   function submitLead() {
     var d = data(), btn = $("next");
+    if (SRC) d.src = SRC;
     btn.disabled = true; btn.textContent = t("nav.sending");
     var body = { lead: d, website: $("website").value };
+    if (draftToken) body.draft = draftToken;
     return fetch(API.replace(/\/$/, "") + "/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw j; return j; }); })
       .then(function (j) {
-        submittedRef = j.ref;
+        submittedRef = j.ref; setDraftToken("");
         moversSent = j.moversRequested ? (j.movers || []) : null;
         suppliesSent = j.supplies || null;
         editToken = j.editToken || "";
@@ -911,6 +971,69 @@
       .then(function () { if (!paying) { btn.disabled = false; btn.textContent = t("nav.send"); } });
   }
 
+  // ---------- "שמרו לי ותזכירו" (רק בהסכמה, רק באתר עם שרת) ----------
+  function draftData() { var d = data(); ["tz", "consent", "poa", "marketing", "moversConsent", "suppliesConsent"].forEach(function (k) { delete d[k]; }); return d; }
+  function setDraftToken(tok) { draftToken = tok || ""; try { if (draftToken) localStorage.setItem(DRAFT_KEY, draftToken); else localStorage.removeItem(DRAFT_KEY); } catch (e) {} }
+  function updateSaveBox() {
+    var box = $("saveBox"); if (!box) return;
+    var show = !!API && step >= 1 && step < LAST && !submittedRef;
+    box.hidden = !show;
+    if (!show) return;
+    $("saveOpen").hidden = !!draftToken;
+    if (draftToken && $("svDone").hidden) { $("svDone").textContent = t("dr.saved"); $("svDone").hidden = false; }
+  }
+  function draftUpdate() {
+    if (!API || !draftToken || submittedRef) return;
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(function () {
+      fetch(API.replace(/\/$/, "") + "/drafts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: draftToken, step: step, data: draftData() }) })
+        .then(function (r) { if (r.status === 404 || r.status === 409) setDraftToken(""); }).catch(function () {});
+    }, 800);
+  }
+  $("saveOpen").onclick = function () {
+    var p = $("savePanel"), open = p.hidden;
+    p.hidden = !open; $("saveOpen").setAttribute("aria-expanded", String(open));
+    if (open) {
+      var d = data(); if (!$("svContact").value) $("svContact").value = d.email || d.phone || "";
+      $("svContact").focus();
+    }
+  };
+  $("svCancel").onclick = function () { $("savePanel").hidden = true; $("saveOpen").setAttribute("aria-expanded", "false"); $("saveOpen").focus(); };
+  $("svContact").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("svSave").click(); } });
+  $("svSave").onclick = function () {
+    var v = $("svContact").value.trim(), err = $("svErr"), msg = "";
+    if (!C.validEmail(v) && !C.validPhone(v)) msg = t("dr.errContact");
+    else if (!$("svConsent").checked) msg = t("dr.errConsent");
+    $("svContact").toggleAttribute("aria-invalid", !C.validEmail(v) && !C.validPhone(v));
+    if (msg) { err.textContent = msg; err.hidden = false; return; }
+    err.hidden = true;
+    var btn = $("svSave"); btn.disabled = true; btn.textContent = t("dr.saving");
+    fetch(API.replace(/\/$/, "") + "/drafts", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contact: v, consent: true, step: step, lang: LANG, src: SRC || "", data: draftData() }) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j; }); })
+      .then(function (j) {
+        setDraftToken(j.token);
+        $("savePanel").hidden = true; $("saveOpen").hidden = true;
+        $("svDone").textContent = t(j.mailed ? "dr.savedMail" : "dr.savedNoMail"); $("svDone").hidden = false;
+        toast(t(j.mailed ? "dr.savedMail" : "dr.savedNoMail"));
+      })
+      .catch(function (e) { err.textContent = (e instanceof Error || !e || !e.errors) ? t("err.network") : t(e.errors.consent ? "dr.errConsent" : "dr.errContact"); err.hidden = false; })
+      .then(function () { btn.disabled = false; btn.textContent = t("dr.save"); });
+  };
+  // חזרה מהקישור במייל (?d=...): משחזרים את מה שנשמר וממשיכים מאותו שלב
+  function restoreDraft(tok) {
+    return fetch(API.replace(/\/$/, "") + "/drafts/" + encodeURIComponent(tok)).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+      .then(function (j) {
+        try { history.replaceState(null, "", location.pathname + location.search.replace(/([?&])d=[^&]*&?/, "$1").replace(/[?&]$/, "") + location.hash); } catch (e) {}
+        var wb = $("welcome");
+        if (!j) { wb.textContent = t("dr.gone"); wb.hidden = false; return; }
+        setDraftToken(tok); submittedRef = "";
+        setData(j.data || {}); applyShowIf(); save();
+        showStep(Math.min(j.step || 0, LAST - 1), true);
+        wb.textContent = t("dr.welcome"); wb.hidden = false;
+      });
+  }
+
   // ---------- טקסטים קבועים בדף ----------
   function applyStatic() {
     var rtl = !!C.RTL[LANG];
@@ -921,6 +1044,7 @@
     document.querySelectorAll("[data-i18n-hl]").forEach(function (el) {
       el.innerHTML = esc(t(el.getAttribute("data-i18n-hl"))).replace(/\[\[(.+?)\]\]/g, '<mark class="hl">$1</mark>');
     });
+    if ($("qCity")) $("qCity").placeholder = t("q.ph");
     // פרטי קשר בהצהרות — ממולאים פעם אחת בקובץ site-info.js
     // שורות שעוד לא מולאו ב-site-info.js — מוסתרות (בלי "[שם מלא]" וכו' באתר החי)
     var fill = function (v) { return '<span class="fill">' + esc(v) + "</span>"; };
@@ -989,6 +1113,7 @@
   });
   $("back").onclick = function () { showStep(Math.max(0, step - 1), true); };
   $("editBtn").onclick = function () { showStep(0, true); };
+  $("shareWa").addEventListener("click", function () { hit("share"); });
   $("copyDossier").onclick = function () { copy($("dossier").textContent, t("dos.copied")); };
   $("f").addEventListener("input", function () { if (step === 0) hit("start"); });
   $("f").addEventListener("change", function () { if (step === 0) hit("start"); });
@@ -1109,9 +1234,12 @@
     setTimeout(exPlay, 800);
   } else {
     showStep(step, false);
-    if (restored && step < LAST) {
+    var dm = API && /[?&]d=([A-Za-z0-9_-]{10,64})/.exec(location.search);
+    if (dm) restoreDraft(dm[1]);
+    else if (restored && step < LAST) {
       var wb = $("welcome");
-      wb.textContent = t("wb.back") + ($("tz") && !$("tz").value ? " " + t("wb.tz") : "");
+      // תעודת זהות לא נשמרת בדפדפן — מזכירים רק למי שבחר "תעדכנו בשבילי" (רק שם מבקשים אותה)
+      wb.textContent = t("wb.back") + ($("tz") && !$("tz").value && data().service === "concierge" ? " " + t("wb.tz") : "");
       wb.hidden = false;
     }
   }

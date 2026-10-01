@@ -16,12 +16,14 @@ import { moversApi, publicMoversRouter, sitePage } from "./movers.js";
 import { sendMail, reviewRequestEmail } from "./connectors/email.js";
 import { laterRouter, runReminders } from "./later.js";
 import { createPlaces } from "./places.js";
+import { draftsDb, draftsRouter, runDraftReminders } from "./drafts.js";
 import { randomBytes } from "node:crypto";
 
-const HIT_KEYS = /^(step:[0-9]|start|results|submit|paid|video|go)$/;
+const HIT_KEYS = /^(step:[0-9]|start|results|submit|paid|video|go|share)$/;
 
 export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   const crypt = makeCrypto(cfg.dataKey);
+  const drafts = draftsDb(db);   // "שמרו לי ותזכירו" — טיוטות בהסכמה
   const pay = getPaymentProvider(cfg); // null כשהתשלום כבוי
   const M = moversApi(db);
   const app = express();
@@ -116,8 +118,10 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
           successUrl: cfg.publicUrl + "/#done", cancelUrl: cfg.publicUrl + "/#pay-cancel"
         });
         db.event(id, "payment:checkout", amount + " ₪");
+        if (req.body && req.body.draft) drafts.convert(req.body.draft);
         return res.status(201).json({ ref, payUrl: c.url, amount, ...out });
       }
+      if (req.body && req.body.draft) drafts.convert(req.body.draft);   // הטיוטה הושלמה
       res.status(201).json({ ref, ...out });
       // החיבורים רצים אחרי שהלקוח קיבל תשובה, כדי שלא יחכה
       app.locals.pending = runOutbound(lead, ref, id, db, cfg).catch((e) => console.error("[outbound]", e));
@@ -153,12 +157,18 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   // מונים אנונימיים לשלבי הטופס (בשביל משפך המרה). בלי IP ובלי עוגיות.
   app.post("/api/hit", softLimiter, express.json({ limit: "1kb" }), (req, res) => {
     const k = req.body && req.body.k;
-    if (typeof k === "string" && HIT_KEYS.test(k)) db.bump("view:" + k);
+    if (typeof k === "string" && HIT_KEYS.test(k)) {
+      db.bump("view:" + k);
+      // לפי מקור (קישור מעקב): כניסה, התחלת מילוי, הגעה לרשימה
+      const src = req.body.src;
+      if (typeof src === "string" && /^[a-z0-9_-]{1,32}$/.test(src) && /^(step:0|start|results)$/.test(k)) db.bump("src:" + src + ":" + k);
+    }
     res.status(204).end();
   });
 
   // השלמת פרטים אחר כך (API + דף מהמייל)
   app.use(laterRouter({ db, crypt, cfg }));
+  app.use(draftsRouter({ db, crypt, cfg, drafts }));
   app.use("/api", (req, res) => res.status(404).json({ message: "לא נמצא" }));
   app.use("/api", (err, req, res, next) => {
     const status = err.status || err.statusCode || 500;
@@ -193,7 +203,7 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   app.use(publicMoversRouter({ db, crypt, cfg }));
 
   // ---- ניהול ----
-  app.use("/admin", adminRouter({ db, crypt, cfg }));
+  app.use("/admin", adminRouter({ db, crypt, cfg, drafts }));
 
   // ---- האתר ----
   // כתובות לפי שפה: /en, /ru, /ar (אותו דף, השפה נקבעת בדפדפן)
@@ -236,6 +246,9 @@ export function createApp(cfg = loadConfig(), db = openDb(cfg.dbPath)) {
   const remind = () => runReminders({ db, crypt, cfg });
   const mtimer = setInterval(() => remind().catch((e) => console.error("[remind]", e)), 3600 * 1000); mtimer.unref();
   app.locals.runReminders = remind;
+  const draftRemind = () => runDraftReminders({ drafts, crypt, cfg });
+  const dtimer = setInterval(() => draftRemind().catch((e) => console.error("[drafts]", e)), 3600 * 1000); dtimer.unref();
+  app.locals.runDraftReminders = draftRemind; app.locals.drafts = drafts;
 
   app.locals.db = db;
   app.locals.pay = pay;

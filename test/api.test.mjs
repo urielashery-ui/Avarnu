@@ -90,7 +90,7 @@ test("בדיקות תקינות בשרת", async () => {
   const c = await post({ lead: { ...good(), service: "concierge" } });
   assert.equal(c.status, 400, "שירות מלא דורש הסכמה לפנייה בשם הלקוח");
   const s = await post({ lead: { ...good(), email: "" } });
-  assert.equal(s.status, 400, "עדכון עצמי דורש מייל");
+  assert.equal(s.status, 201, "עדכון עצמי בלי מייל: מותר (הרשימה מוצגת במסך)");
   assert.equal((await post({ lead: { ...good(), isp: "<script>" } })).status, 400);
   assert.equal((await post({ lead: { ...good(), kidsCount: "abc" } })).status, 400);
   assert.equal((await post("x")).status, 400);

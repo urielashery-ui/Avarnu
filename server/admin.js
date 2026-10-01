@@ -40,10 +40,10 @@ table.narrow{min-width:0}
 const page = (title, body) => `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc(title)} · ניהול</title><link rel="stylesheet" href="/admin/admin.css"></head>
-<body><div class="w"><nav class="top" aria-label="ניהול"><strong>עברנו · ניהול</strong><a href="/admin">כל הפניות</a><a href="/admin/callbacks">שיחות לתאם</a><a href="/admin/movers">מובילים</a><a href="/admin/stats">נתונים</a><a href="/admin/export.csv">ייצוא לאקסל</a></nav>
+<body><div class="w"><nav class="top" aria-label="ניהול"><strong>עברנו · ניהול</strong><a href="/admin">כל הפניות</a><a href="/admin/drafts">שמרו להמשך</a><a href="/admin/callbacks">שיחות לתאם</a><a href="/admin/movers">מובילים</a><a href="/admin/stats">נתונים</a><a href="/admin/export.csv">ייצוא לאקסל</a></nav>
 <main>${body}</main></div></body></html>`;
 
-export function adminRouter({ db, crypt, cfg }) {
+export function adminRouter({ db, crypt, cfg, drafts }) {
   const r = express.Router();
 
   // סיסמה
@@ -106,7 +106,7 @@ export function adminRouter({ db, crypt, cfg }) {
     const tz = !d.tz ? "— (לא נמסר)" : reveal ? d.tz : "*****" + String(d.tz).slice(-4);
     const info = [["שם", d.firstName + " " + d.lastName],
       ["תעודת זהות", `${esc(tz)} ${reveal ? "" : `<a href="?reveal=1">הצגה מלאה (נרשם ביומן)</a>`}`, true],
-      ["טלפון", d.phone], ["מייל", d.email], ["שפה מועדפת", d.lang && d.lang !== "he" ? C.LANG_NAMES_HE[d.lang] : ""], ["אנשים בבית", d.people], ["בדירה החדשה", d.tenure === "rent" ? "שוכרים" + (d.landlord ? " מ" + d.landlord : "") : "בעלים"],
+      ["טלפון", d.phone], ["מייל", d.email], ["שפה מועדפת", d.lang && d.lang !== "he" ? C.LANG_NAMES_HE[d.lang] : ""], ["הגיעו דרך", d.src || ""], ["אנשים בבית", d.people], ["בדירה החדשה", d.tenure === "rent" ? "שוכרים" + (d.landlord ? " מ" + d.landlord : "") : "בעלים"],
       ["כתובת קודמת", C.addr(d, "old")], ["כתובת חדשה", C.addr(d, "new") + (d.zip ? ", מיקוד " + d.zip : "") + (d.floor ? ", קומה " + d.floor : "")],
       ["תאריך מעבר", C.fmtDate(d.moveDate)],
       ["משק הבית", [d.people && d.people + " אנשים", d.kidsCount && d.kidsCount !== "0" && d.kidsCount + " ילדים"].filter(Boolean).join(", ")],
@@ -188,6 +188,32 @@ export function adminRouter({ db, crypt, cfg }) {
   const cbSelect = (c) => `<form method="post" action="/admin/callbacks/${c.id}" class="cbf"><label class="sr" for="cb-${c.id}">מצב השיחה</label>
     <select id="cb-${c.id}" name="status">${Object.entries(CB).map(([k, v]) => `<option value="${k}"${c.status === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <button type="submit">עדכון</button></form>`;
+  // "שמרו לי ותזכירו": מי שהתחיל, לא סיים, והסכים שנחזור אליו
+  const DSTAT = { open: "פתוח", handled: "טופל", converted: "השלים פנייה", stopped: "ביקש להפסיק" };
+  r.get("/drafts", (req, res) => {
+    if (!drafts) return res.status(404).send(page("לא זמין", "<h1>לא זמין</h1>"));
+    const status = DSTAT[req.query.status] ? req.query.status : "";
+    const counts = drafts.counts(), total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const chip = (k, label, n) => `<a href="/admin/drafts${k ? "?status=" + k : ""}"${status === k ? ' aria-current="page"' : ""}>${label} (${n || 0})</a>`;
+    const rows = drafts.list(status).map((row) => {
+      let d = {}; try { d = crypt.decrypt(row.data) || {}; } catch { /* מפתח שהתחלף */ }
+      const f = d.data || {}, contact = d.contact || "";
+      const link = row.kind === "email" ? `<a href="mailto:${esc(contact)}" dir="ltr">${esc(contact)}</a>` : `<a href="tel:${esc(contact)}" dir="ltr">${esc(contact)}</a> · <a href="https://wa.me/972${esc(String(contact).replace(/\D/g, "").replace(/^0/, ""))}" target="_blank" rel="noopener">וואטסאפ</a>`;
+      const name = [f.firstName, f.lastName].filter(Boolean).join(" ");
+      const act = row.status === "open" ? `<form method="post" action="/admin/drafts/${row.id}"><input type="hidden" name="status" value="handled"><button type="submit">סמן כטופל</button></form>` : "";
+      return `<tr><td class="n">${esc(d8(row.updated_at))}</td><td>${link}${name ? "<br>" + esc(name) : ""}</td><td>${esc(f.newCity || "")}</td><td class="n">${esc(C.fmtDate(f.moveDate) || "")}</td>
+        <td class="n">${row.step + 1}</td><td dir="ltr">${esc(row.src || "")}</td><td><span class="pill">${esc(DSTAT[row.status] || row.status)}</span>${row.remind_count ? ` <span class="muted">(${row.remind_count} תזכורות)</span>` : ""}</td><td>${act}</td></tr>`;
+    }).join("");
+    res.send(page("שמרו להמשך", `<h1>שמרו להמשך</h1>
+      <p class="muted">אנשים שהתחילו למלא, לא סיימו, והסכימו שנשמור ונפנה אליהם. מי שהשאיר מייל מקבל קישור להמשך ועד 2 תזכורות. מי שהשאיר טלפון — כדאי להתקשר או לשלוח וואטסאפ. הכול נמחק אוטומטית 30 יום אחרי העדכון האחרון.</p>
+      <div class="chips" role="navigation" aria-label="סינון">${chip("", "הכול", total)}${Object.entries(DSTAT).map(([k, v]) => chip(k, v, counts[k])).join("")}</div>
+      ${rows ? `<div class="t"><table><thead><tr><th scope="col">עודכן</th><th scope="col">איך לחזור אליו</th><th scope="col">עיר חדשה</th><th scope="col">תאריך מעבר</th><th scope="col">הגיע עד שלב</th><th scope="col">מקור</th><th scope="col">מצב</th><th scope="col"><span class="sr">פעולה</span></th></tr></thead><tbody>${rows}</tbody></table></div>` : "<p>אין עדיין.</p>"}`));
+  });
+  r.post("/drafts/:id", express.urlencoded({ extended: false, limit: "1kb" }), (req, res) => {
+    if (drafts && DSTAT[req.body.status]) drafts.setStatus(Number(req.params.id), req.body.status);
+    res.redirect(303, "/admin/drafts");
+  });
+
   r.get("/callbacks", (req, res) => {
     const status = CB[req.query.status] ? req.query.status : (req.query.status === "all" ? "" : "todo");
     const rows = db.callbacksList(status);
@@ -227,13 +253,21 @@ export function adminRouter({ db, crypt, cfg }) {
     // step:0 נספר כשהדף נטען (כלומר: נכנסו לאתר). "start" = התחילו להקליד. step:N = עברו לשלב N+1.
     const fname = (k) => k === "step:0" ? "נכנסו לאתר" : k === "start" ? "התחילו למלא" : k === "results" ? "הגיעו לרשימה" : "עברו לשלב " + (Number(k.slice(5)) + 1);
     const funnel = ["step:0", "start", "step:1", "step:2", "step:3", "step:4", "step:5", "step:6", "results"].map((k) => [fname(k), c["view:" + k] || 0]).filter(([, v], i) => v || i < 4);
+    // מקורות (קישורי מעקב ?src=): נכנסו / התחילו / שלחו פנייה
+    const srcs = {};
+    for (const [k, v] of Object.entries(c)) { const m = /^src:([a-z0-9_-]+):(step:0|start|results)$/.exec(k); if (m) (srcs[m[1]] ||= { v: 0, s: 0, l: 0 })[m[2] === "step:0" ? "v" : m[2] === "start" ? "s" : "r"] = v; }
+    for (const row of rows.slice(0, 5000)) { const d = open(row); if (d && d.src) (srcs[d.src] ||= { v: 0, s: 0, l: 0 }).l++; }
+    const srcRows = Object.entries(srcs).sort((a, b) => b[1].l - a[1].l || b[1].v - a[1].v);
+    const srcTable = `<section class="card"><h2>מקורות (קישורי מעקב)</h2>${srcRows.length ? `<div class="t"><table><thead><tr><th scope="col">מקור</th><th scope="col">נכנסו</th><th scope="col">התחילו למלא</th><th scope="col">שלחו פנייה</th></tr></thead><tbody>${srcRows.map(([k, x]) => `<tr><th scope="row" dir="ltr">${esc(k)}</th><td class="n">${x.v}</td><td class="n">${x.s}</td><td class="n">${x.l}</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">אין עדיין נתונים.</p>`}
+      <p class="muted">לכל קבוצה או שותף נותנים קישור משלו, למשל <span dir="ltr">${esc(cfg.publicUrl)}/?src=fb-dirot-tlv</span> (אותיות באנגלית, ספרות ומקף). מי שנכנס דרכו נספר כאן 30 יום.</p></section>`;
     const clicks = Object.entries(c).filter(([k]) => k.startsWith("click:")).map(([k, v]) => [k.slice(6), v]).sort((a, b) => b[1] - a[1]);
     const tiles = [["פניות", rows.length], ["שירות מלא", rows.filter((r) => r.service === "concierge").length], ["הסכימו לדיוור", rows.filter((r) => r.marketing).length],
-      ["קליקים על שותפים", clicks.reduce((s, x) => s + x[1], 0)], ["צפו בסרטון", c["view:video"] || 0], ["בקשות לשיחה עם נציג", c["callback"] || 0]].concat(cfg.payments.enabled ? [["הכנסות (₪)", revenue]] : []);
+      ["קליקים על שותפים", clicks.reduce((s, x) => s + x[1], 0)], ["שמרו להמשך", c["draft"] || 0], ["צפו בסרטון", c["view:video"] || 0], ["שיתפו לחבר", c["view:share"] || 0], ["בקשות לשיחה עם נציג", c["callback"] || 0]].concat(cfg.payments.enabled ? [["הכנסות (₪)", revenue]] : []);
     res.send(page("נתונים", `<h1>נתונים</h1>
       <div class="chips" role="navigation" aria-label="טווח זמן">${[7, 30, 90].map((n) => `<a href="/admin/stats?days=${n}"${n === days ? ' aria-current="page"' : ""}>${n} ימים</a>`).join("")}</div>
       <section class="tiles" aria-label="סיכום">${tiles.map(([k, v]) => `<div class="tile"><span class="muted">${esc(k)}</span><strong>${esc(v)}</strong></div>`).join("")}</section>
       ${table("משפך בטופס (כניסות לכל שלב)", funnel)}
+      ${srcTable}
       ${table("ערים חדשות מובילות", top(by(rows, (r) => r.new_city)))}
       ${table("ההנחות הנפוצות", top(benefits))}
       ${table("קליקים לפי שותף", clicks)}

@@ -98,13 +98,19 @@ for (const [lang, scheme] of RUNS) {
     await page.click("#back"); await page.click("#next");
     assert.equal(await page.isVisible("#welcome"), false);
     all.push(...await scan(page, "שלב משק בית"));
+    if (await page.isVisible("#saveOpen")) {   // "שמרו לי ותזכירו" (רק באתר עם שרת)
+      await page.click("#saveOpen"); await page.click("#svSave");
+      assert.equal(await page.isVisible("#svErr"), true, "שגיאה כשאין פרטי קשר");
+      all.push(...await scan(page, "שמירה להמשך"));
+      await page.click("#svCancel");
+    }
     await page.fill("#people", "4"); await page.fill("#kidsCount", "2");
     await page.check("#kidsUnder3"); await page.check("#singleParent"); await page.check("#reservist");
-    await page.click("#next");
+    // "רשימה מדויקת יותר": באותו שלב, הכול מקופל ולא חובה
+    all.push(...await scan(page, "שלב משק בית (מקופל)"));
+    for (const sm of await page.$$('[data-step="1"] details.moref > summary')) await sm.click();
+    all.push(...await scan(page, "שלב פרטים נוספים (פתוח)"));
     if (await page.isVisible("#moveStatus-quotes")) {
-      all.push(...await scan(page, "שלב הובלה"));
-      await page.click("#next");
-      assert.equal(await page.getAttribute("#moveStatus-fs", "aria-invalid"), "true", "חובה לבחור מצב הובלה");
       await page.check("#moveStatus-quotes");
       await page.click("#next");
       assert.equal(await page.isVisible("#moversConsent-err"), true, "חובה הסכמה להעברה למובילים");
@@ -119,10 +125,7 @@ for (const [lang, scheme] of RUNS) {
         assert.equal(await page.isVisible("#suppliesConsent-err"), true, "חובה הסכמה להעברה לספק");
         await page.check("#suppliesConsent");
       }
-      all.push(...await scan(page, "שלב הובלה מלא"));
-      await page.click("#next");
     } else if (await page.isVisible("#supplies-need")) { // בלי מובילים: רק קרטונים
-      all.push(...await scan(page, "שלב אריזה"));
       await page.check("#supplies-need");
       await page.selectOption("#rooms", "2");
       assert.equal(await page.inputValue("#kBoxes"), "30", "2 חדרים = 30 קרטונים");
@@ -130,20 +133,15 @@ for (const [lang, scheme] of RUNS) {
       await page.click("#next");
       assert.equal(await page.isVisible("#kTape-err"), true, "כמות לא תקינה");
       await page.fill("#kTape", "5");
-      all.push(...await scan(page, "שלב אריזה מלא"));
-      await page.click("#next");
     }
-    all.push(...await scan(page, "שלב 3"));
-    await page.click("#next");
     await page.selectOption("#isp", "בזק"); await page.selectOption("#hmo", "מכבי"); await page.check("#xCar");
-    all.push(...await scan(page, "שלב 4"));
+    all.push(...await scan(page, "שלב פרטים נוספים מלא"));
     await page.click("#next");
-    // פרטים אישיים — רק בסוף
+    // שלב אחרון: פרטים אישיים (+ שליחה באתר)
     all.push(...await scan(page, "שלב פרטים אישיים"));
     await page.click("#next");
     assert.equal(await page.getAttribute("#firstName", "aria-invalid"), "true", "שם חובה");
     await fillPersonal(page);
-    await page.click("#next");
     if (await page.isVisible("#service-self")) { // מצב אתר אמיתי: שלב שליחה
       all.push(...await scan(page, "שלב שליחה"));
       assert.equal(await page.isVisible("#tz"), false, "עדכון עצמי: לא מבקשים תעודת זהות");
@@ -174,6 +172,7 @@ for (const [lang, scheme] of RUNS) {
       if (process.env.EXPECT_MOVERS) assert.match(await page.textContent("#moving"), /הובלות הדגמה/, "מוצגים המובילים שקיבלו");
       all.push(...await scan(page, "רשימה אחרי שליחה"));
     } else {
+      await page.click("#next");
       assert.equal(await page.isVisible("#results"), true);
       assert.ok(await page.isVisible("#done-ar-singleParent"), "מוצגת הנחת הורה יחיד");
       assert.ok(await page.isVisible("#done-kids-daycare"), "מוצג סבסוד מעון");

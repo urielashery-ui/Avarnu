@@ -6,7 +6,7 @@ import "../src/i18n/ar.js";
 import "../src/catalog.js";
 const C = globalThis.MoversCatalog;
 
-const TEXT = ["firstName", "lastName", "tz", "phone", "email", "people", "newStreet", "newNum", "newApt", "newCity", "zip", "floor",
+const TEXT = ["src", "firstName", "lastName", "tz", "phone", "email", "people", "newStreet", "newNum", "newApt", "newCity", "zip", "floor",
   "oldStreet", "oldApt", "oldCity", "moveDate", "landlord", "elecContract", "elecMeter", "elecRead", "elecSupplier",
   "waterMeter", "waterRead", "gas", "gasRead", "isp", "tv", "mobile", "hmo", "bank", "card", "tenure", "service", "kidsCount",
   "moveStatus", "rooms", "oldFloor", "dateFlex", "specialItems", "lang",
@@ -69,9 +69,9 @@ export function validateLead(input) {
   if (lead.service === "concierge" && !lead.poa) errors.poa = "חסרה הסכמה לפנייה בשמכם";
   // תעודת זהות: רק למי שביקש שנעדכן בשבילו (הגופים מבקשים אותה). מי שמעדכן לבד — לא צריך למסור.
   if (lead.service === "concierge" && !lead.tz) errors.tz = "חסר מספר תעודת זהות";
-  if (lead.service === "self" && !lead.email) errors.email = "כדי שנשלח לכם את הרשימה, צריך מייל";
   lead.tz = lead.tz ? C.digits(lead.tz).padStart(9, "0") : "";
   lead.lang = lead.lang || "he";
+  lead.src = /^[a-z0-9_-]{1,32}$/.test(lead.src) ? lead.src : "";   // קישור המעקב שממנו הגיעו
   // עיר בכל שפה (Haifa / Хайфа / حيفا) נשמרת בשם הקנוני בעברית — בשביל התאמת מובילים וקישורים
   lead.newCity = C.canonCity(lead.newCity); lead.oldCity = C.canonCity(lead.oldCity);
   if (!Object.keys(errors).length) {
